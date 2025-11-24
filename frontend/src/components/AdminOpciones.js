@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { apiService } from '../utils/apiService';
 
 const AdminOpciones = () => {
   const [opciones, setOpciones] = useState({});
@@ -37,11 +38,8 @@ const AdminOpciones = () => {
 
   const cargarOpciones = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/opciones');
-      if (response.ok) {
-        const data = await response.json();
-        setOpciones(data);
-      }
+      const data = await apiService.obtenerOpciones();
+      setOpciones(data);
     } catch (error) {
       console.error('Error cargando opciones:', error);
       // Usar opciones por defecto si hay error
@@ -69,31 +67,18 @@ const AdminOpciones = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/opciones', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          categoria: selectedCategoria,
-          opcion: nuevaOpcion,
-        }),
+      await apiService.agregarOpcion(selectedCategoria, nuevaOpcion);
+      setOpciones({
+        ...opciones,
+        [selectedCategoria]: [
+          ...(opciones[selectedCategoria] || []),
+          nuevaOpcion,
+        ],
       });
-
-      if (response.ok) {
-        setOpciones({
-          ...opciones,
-          [selectedCategoria]: [
-            ...(opciones[selectedCategoria] || []),
-            nuevaOpcion,
-          ],
-        });
-        setNuevaOpcion('');
-        setMessageType('success');
-        setMessage(`✅ Opción "${nuevaOpcion}" agregada a ${selectedCategoria}`);
-        setOpenDialog(false);
-      } else {
-        setMessageType('error');
-        setMessage('❌ Error al agregar la opción');
-      }
+      setNuevaOpcion('');
+      setMessageType('success');
+      setMessage(`✅ Opción "${nuevaOpcion}" agregada a ${selectedCategoria}`);
+      setOpenDialog(false);
     } catch (error) {
       console.error('Error:', error);
       setMessageType('error');
@@ -103,23 +88,13 @@ const AdminOpciones = () => {
 
   const eliminarOpcion = async (categoria, opcion) => {
     try {
-      const response = await fetch('http://localhost:5000/api/opciones', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          categoria: categoria,
-          opcion: opcion,
-        }),
+      await apiService.eliminarOpcion(categoria, opcion);
+      setOpciones({
+        ...opciones,
+        [categoria]: opciones[categoria].filter(o => o !== opcion),
       });
-
-      if (response.ok) {
-        setOpciones({
-          ...opciones,
-          [categoria]: opciones[categoria].filter(o => o !== opcion),
-        });
-        setMessageType('success');
-        setMessage(`✅ Opción "${opcion}" eliminada`);
-      }
+      setMessageType('success');
+      setMessage(`✅ Opción "${opcion}" eliminada`);
     } catch (error) {
       console.error('Error:', error);
       setMessageType('error');

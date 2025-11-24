@@ -5,6 +5,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Card, CardContent, CardHeader, Box, Grid, Typography, Chip, Dialog, DialogContent, DialogTitle, Button, Alert, CircularProgress } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import { apiService } from '../utils/apiService';
 
 const Calendar = () => {
   const [events, setEvents] = useState([]);
@@ -21,12 +22,10 @@ const Calendar = () => {
   const cargarEventos = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/eventos-inspecciones');
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Convertir eventos de la BD al formato de FullCalendar
-        const eventosFormateados = data.map(evento => ({
+      const data = await apiService.obtenerEventos();
+      
+      // Convertir eventos de la BD al formato de FullCalendar
+      const eventosFormateados = data.map(evento => ({
           id: evento.id.toString(),
           title: `${evento.operador} - ${evento.auditor}`,
           start: evento.fecha_inicio,
@@ -50,9 +49,6 @@ const Calendar = () => {
         }));
         
         setEvents(eventosFormateados);
-      } else {
-        setError('Error al cargar eventos');
-      }
     } catch (error) {
       console.error('Error:', error);
       setError('Error de conexión');

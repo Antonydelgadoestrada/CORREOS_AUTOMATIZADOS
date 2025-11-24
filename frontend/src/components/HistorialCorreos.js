@@ -24,6 +24,7 @@ import {
   MenuItem,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import { apiService } from '../utils/apiService';
 import CloseIcon from '@mui/icons-material/Close';
 import ClearIcon from '@mui/icons-material/Clear';
 
@@ -49,14 +50,8 @@ const HistorialCorreos = () => {
   const cargarCorreos = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/correos-enviados');
-      if (response.ok) {
-        const data = await response.json();
-        setCorreos(data || []);
-      } else {
-        setMessageType('error');
-        setMessage('❌ Error al cargar los correos');
-      }
+      const data = await apiService.obtenerCorreos();
+      setCorreos(data || []);
     } catch (error) {
       console.error('Error:', error);
       setMessageType('error');

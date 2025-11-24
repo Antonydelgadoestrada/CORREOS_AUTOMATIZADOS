@@ -11,12 +11,44 @@ export const apiService = {
   },
 
   async obtenerCorreos() {
-    const response = await fetch(`${API_URL}/correos`);
+    const response = await fetch(`${API_URL}/correos-enviados`);
     return response.json();
   },
 
-  async obtenerCorreosPorProductor(productor) {
-    const response = await fetch(`${API_URL}/correos/${productor}`);
+  async obtenerOpciones() {
+    const response = await fetch(`${API_URL}/opciones`);
+    return response.json();
+  },
+
+  async agregarOpcion(clave, valor, categoria) {
+    const response = await fetch(`${API_URL}/opciones`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clave, valor, categoria }),
+    });
+    return response.json();
+  },
+
+  async eliminarOpcion(id) {
+    const response = await fetch(`${API_URL}/opciones`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    return response.json();
+  },
+
+  async crearEvento(datos) {
+    const response = await fetch(`${API_URL}/eventos-inspecciones`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(datos),
+    });
+    return response.json();
+  },
+
+  async obtenerEventos() {
+    const response = await fetch(`${API_URL}/eventos-inspecciones`);
     return response.json();
   },
 };

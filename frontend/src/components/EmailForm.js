@@ -14,6 +14,7 @@ import {
   MenuItem,
 } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { apiService } from '../utils/apiService';
 
 const EmailForm = () => {
   const [plantillas, setPlantillas] = useState([]);
@@ -61,20 +62,8 @@ const EmailForm = () => {
       ]);
 
       // Cargar opciones del backend
-      const response = await fetch('http://localhost:5000/api/opciones');
-      if (response.ok) {
-        const data = await response.json();
-        setOpciones(data);
-      } else {
-        // Opciones por defecto si hay error
-        setOpciones({
-          Norma: ['NOP', 'RTPO', '848PT', 'JAS', 'BIOSUISSE', 'LPO', 'GLOBALG.A.P.'],
-          Alcance: ['Producción', 'Procesamiento', 'Empaque', 'Almacenamiento', 'Transporte'],
-          Modalidad: ['Presencial', 'Remota', 'Híbrida'],
-          Auditor: ['Auditor 1', 'Auditor 2', 'Auditor 3', 'Auditor 4'],
-          Tipo: ['Inicial', 'Seguimiento', 'Cambio de alcance', 'Re-certificación'],
-        });
-      }
+      const data = await apiService.obtenerOpciones();
+      setOpciones(data);
     } catch (error) {
       console.error('Error cargando plantillas:', error);
       // Opciones por defecto
@@ -144,77 +133,62 @@ const EmailForm = () => {
       const asunto = plantilla.nombre;
 
       // Guardar en base de datos
-      const response = await fetch('http://localhost:5000/api/enviar-correo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          destinatario: formData.destinatario,
-          asunto: asunto,
-          contenido: contenido,
-          productor: formData.operador,
-        }),
+      const data = await apiService.enviarCorreo({
+        destinatario: formData.destinatario,
+        asunto: asunto,
+        contenido: contenido,
+        productor: formData.operador,
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setMessageType('success');
-        setMessage(`✅ Correo registrado. ID: ${data.id}. Guardando en calendario...`);
+      setMessageType('success');
+      setMessage(`✅ Correo registrado. ID: ${data.id}. Guardando en calendario...`);
 
-        // Calcular fecha fin
-        const fechaFin = calcularFechaFin(formData.fecha_inicio, formData.dias_inspeccion);
+      // Calcular fecha fin
+      const fechaFin = calcularFechaFin(formData.fecha_inicio, formData.dias_inspeccion);
 
-        // Guardar evento en calendario
-        const eventResponse = await fetch('http://localhost:5000/api/eventos-inspecciones', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            operador: formData.operador,
-            numero_operador: formData.numero_operador,
-            fecha_inicio: formData.fecha_inicio,
-            fecha_fin: fechaFin,
-            dias_inspeccion: formData.dias_inspeccion,
-            auditor: formData.auditor,
-            norma: formData.norma,
-            alcance: formData.alcance,
-            tipo: formData.tipo,
-            modalidad: formData.modalidad,
-            cultivo_producto: formData.cultivo_producto,
-            lugar: formData.lugar,
-            persona_contacto: formData.persona_contacto,
-          }),
-        });
+      // Guardar evento en calendario
+      await apiService.crearEvento({
+        operador: formData.operador,
+        numero_operador: formData.numero_operador,
+        fecha_inicio: formData.fecha_inicio,
+        fecha_fin: fechaFin,
+        dias_inspeccion: formData.dias_inspeccion,
+        auditor: formData.auditor,
+        norma: formData.norma,
+        alcance: formData.alcance,
+        tipo: formData.tipo,
+        modalidad: formData.modalidad,
+        cultivo_producto: formData.cultivo_producto,
+        lugar: formData.lugar,
+        persona_contacto: formData.persona_contacto,
+      });
+
+      setTimeout(() => {
+        // Crear link mailto con el contenido (ya es texto plano)
+        const mailtoLink = `mailto:${encodeURIComponent(formData.destinatario)}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(contenido)}`;
+        
+        // Abrir en nueva pestaña/ventana
+        window.open(mailtoLink, '_blank');
 
         setTimeout(() => {
-          // Crear link mailto con el contenido (ya es texto plano)
-          const mailtoLink = `mailto:${encodeURIComponent(formData.destinatario)}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(contenido)}`;
-          
-          // Abrir en nueva pestaña/ventana
-          window.open(mailtoLink, '_blank');
-
-          setTimeout(() => {
-            setFormData({
-              destinatario: '',
-              operador: '',
-              numero_operador: '',
-              fecha_inicio: '',
-              dias_inspeccion: 0,
-              auditor: '',
-              norma: '',
-              alcance: '',
-              tipo: '',
-              modalidad: '',
-              cultivo_producto: '',
-              lugar: '',
-              persona_contacto: '',
-            });
-            setSelectedPlantilla('');
-          }, 500);
-        }, 1500);
-      } else {
-        const error = await response.json();
-        setMessageType('error');
-        setMessage(`❌ Error: ${error.error}`);
-      }
+          setFormData({
+            destinatario: '',
+            operador: '',
+            numero_operador: '',
+            fecha_inicio: '',
+            dias_inspeccion: 0,
+            auditor: '',
+            norma: '',
+            alcance: '',
+            tipo: '',
+            modalidad: '',
+            cultivo_producto: '',
+            lugar: '',
+            persona_contacto: '',
+          });
+          setSelectedPlantilla('');
+        }, 500);
+      }, 1500);
     } catch (error) {
       setMessageType('error');
       setMessage(`❌ Error: ${error.message}`);
