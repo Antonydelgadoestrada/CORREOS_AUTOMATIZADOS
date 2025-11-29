@@ -12,10 +12,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -27,7 +23,6 @@ const AdminOpciones = () => {
   const [nuevaOpcion, setNuevaOpcion] = useState('');
   const [message, setMessage] = useState(null);
   const [messageType, setMessageType] = useState('success');
-  const [openDialog, setOpenDialog] = useState(false);
 
   const categorias = ['Norma', 'Alcance', 'Modalidad', 'Auditor', 'Tipo'];
 
@@ -67,18 +62,18 @@ const AdminOpciones = () => {
     }
 
     try {
-      await apiService.agregarOpcion(selectedCategoria, nuevaOpcion);
+      const opcionGuardada = nuevaOpcion;
+      await apiService.agregarOpcion(selectedCategoria, opcionGuardada);
       setOpciones({
         ...opciones,
         [selectedCategoria]: [
           ...(opciones[selectedCategoria] || []),
-          nuevaOpcion,
+          opcionGuardada,
         ],
       });
-      setNuevaOpcion('');
       setMessageType('success');
-      setMessage(`✅ Opción "${nuevaOpcion}" agregada a ${selectedCategoria}`);
-      setOpenDialog(false);
+      setMessage(`✅ Opción "${opcionGuardada}" agregada a ${selectedCategoria}`);
+      setNuevaOpcion('');
     } catch (error) {
       console.error('Error:', error);
       setMessageType('error');
@@ -131,6 +126,7 @@ const AdminOpciones = () => {
               fullWidth
               onKeyPress={(e) => {
                 if (e.key === 'Enter') {
+                  e.preventDefault();
                   agregarOpcion();
                 }
               }}
@@ -138,7 +134,7 @@ const AdminOpciones = () => {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={() => setOpenDialog(true)}
+              onClick={agregarOpcion}
               sx={{ whiteSpace: 'nowrap' }}
             >
               Agregar
@@ -162,30 +158,12 @@ const AdminOpciones = () => {
           <strong>💡 Cómo usar:</strong>
           <ul style={{ margin: '0.5rem 0', paddingLeft: '1.5rem' }}>
             <li>Selecciona una categoría (Norma, Alcance, Auditor, etc.)</li>
-            <li>Escribe una nueva opción y haz clic en "Agregar"</li>
+            <li>Escribe una nueva opción y presiona Enter o haz clic en "Agregar"</li>
             <li>Haz clic en el chip (X) para eliminar una opción</li>
             <li>Los cambios se guardan automáticamente en la base de datos</li>
           </ul>
         </Alert>
       </CardContent>
-
-      {/* Diálogo de confirmación */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-        <DialogTitle>Confirmar nueva opción</DialogTitle>
-        <DialogContent>
-          ¿Agregar "{nuevaOpcion}" a {selectedCategoria}?
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancelar</Button>
-          <Button
-            onClick={agregarOpcion}
-            variant="contained"
-            autoFocus
-          >
-            Agregar
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Card>
   );
 };
