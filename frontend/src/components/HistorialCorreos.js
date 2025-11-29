@@ -80,6 +80,10 @@ const HistorialCorreos = () => {
   };
 
   const filtrarCorreos = () => {
+    if (!correos || !Array.isArray(correos)) {
+      return [];
+    }
+    
     let filtered = correos;
 
     // Filtro por productor
@@ -133,8 +137,6 @@ const HistorialCorreos = () => {
     setFiltroFechaFin('');
   };
 
-  const correosFiltrados = filtrarCorreos();
-
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
@@ -142,6 +144,9 @@ const HistorialCorreos = () => {
       </Box>
     );
   }
+
+  // Aplicar filtros
+  const correosFiltrados = filtrarCorreos();
 
   return (
     <Box sx={{ display: 'flex', gap: 2 }}>
@@ -347,22 +352,47 @@ const HistorialCorreos = () => {
                 <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 1 }}>
                   Contenido del Correo
                 </Typography>
-                <Box
-                  sx={{
-                    backgroundColor: '#f9f9f9',
-                    padding: 1.5,
-                    borderRadius: 1,
-                    maxHeight: 300,
-                    overflowY: 'auto',
-                    fontSize: '0.85rem',
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    border: '1px solid #e0e0e0',
-                    fontFamily: 'monospace',
-                  }}
-                >
-                  {selectedCorreo.contenido}
-                </Box>
+                {selectedCorreo.contenido_html ? (
+                  <Box
+                    sx={{
+                      backgroundColor: '#f9f9f9',
+                      padding: 1.5,
+                      borderRadius: 1,
+                      maxHeight: 300,
+                      overflowY: 'auto',
+                      border: '1px solid #e0e0e0',
+                      '& table': {
+                        width: '100%',
+                        borderCollapse: 'collapse',
+                      },
+                      '& td': {
+                        padding: '8px',
+                        border: '1px solid #ddd',
+                      },
+                      '& tr:nth-child(even)': {
+                        backgroundColor: '#f0f0f0',
+                      },
+                    }}
+                    dangerouslySetInnerHTML={{ __html: selectedCorreo.contenido_html }}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      backgroundColor: '#f9f9f9',
+                      padding: 1.5,
+                      borderRadius: 1,
+                      maxHeight: 300,
+                      overflowY: 'auto',
+                      fontSize: '0.85rem',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      border: '1px solid #e0e0e0',
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    {selectedCorreo.contenido}
+                  </Box>
+                )}
               </Grid>
             </Grid>
           </CardContent>

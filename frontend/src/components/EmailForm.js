@@ -145,6 +145,7 @@ const EmailForm = () => {
         asunto: asunto,
         contenido: contenidoTexto,
         productor: formData.operador,
+        contenidoHTML: contenidoHTML,
       });
 
       setMessageType('success');
