@@ -49,20 +49,29 @@ const AdminOpciones = () => {
   };
 
   const agregarOpcion = async () => {
-    if (!nuevaOpcion.trim()) {
+    // Validar que la opción no esté vacía o solo espacios
+    if (!nuevaOpcion || !nuevaOpcion.trim()) {
       setMessageType('error');
-      setMessage('❌ Ingresa una opción válida');
+      setMessage('❌ La opción no puede estar vacía');
       return;
     }
 
-    if (opciones[selectedCategoria]?.includes(nuevaOpcion)) {
+    // Validar que no sea muy corta
+    if (nuevaOpcion.trim().length < 2) {
+      setMessageType('error');
+      setMessage('❌ La opción debe tener al menos 2 caracteres');
+      return;
+    }
+
+    // Validar que no sea duplicada
+    if (opciones[selectedCategoria]?.includes(nuevaOpcion.trim())) {
       setMessageType('error');
       setMessage('❌ Esta opción ya existe');
       return;
     }
 
     try {
-      const opcionGuardada = nuevaOpcion;
+      const opcionGuardada = nuevaOpcion.trim();
       await apiService.agregarOpcion(selectedCategoria, opcionGuardada);
       
       // Recargar opciones desde BD
@@ -74,7 +83,7 @@ const AdminOpciones = () => {
     } catch (error) {
       console.error('Error:', error);
       setMessageType('error');
-      setMessage('❌ Error de conexión');
+      setMessage(`❌ ${error.message || 'Error de conexión'}`);
     }
   };
 

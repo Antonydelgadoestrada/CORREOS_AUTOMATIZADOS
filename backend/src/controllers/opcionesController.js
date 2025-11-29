@@ -25,14 +25,23 @@ const agregarOpcion = async (req, res) => {
   try {
     const { categoria, opcion } = req.body;
 
-    if (!categoria || !opcion) {
-      return res.status(400).json({ error: 'Categoría y opción son requeridas' });
+    // Validar que categoria y opcion no estén vacíos
+    if (!categoria || !categoria.trim()) {
+      return res.status(400).json({ error: 'La categoría es requerida' });
     }
+
+    if (!opcion || !opcion.trim()) {
+      return res.status(400).json({ error: 'La opción no puede estar vacía' });
+    }
+
+    // Trimear valores
+    const categoriaLimpia = categoria.trim();
+    const opcionLimpia = opcion.trim();
 
     // Verificar si ya existe
     const existente = await pool.query(
-      'SELECT * FROM opciones WHERE categoria = $1 AND opcion = $2',
-      [categoria, opcion]
+      'SELECT * FROM opciones WHERE LOWER(categoria) = LOWER($1) AND LOWER(opcion) = LOWER($2)',
+      [categoriaLimpia, opcionLimpia]
     );
 
     if (existente.rows.length > 0) {
@@ -42,10 +51,10 @@ const agregarOpcion = async (req, res) => {
     // Insertar nueva opción
     await pool.query(
       'INSERT INTO opciones (categoria, opcion) VALUES ($1, $2)',
-      [categoria, opcion]
+      [categoriaLimpia, opcionLimpia]
     );
 
-    res.json({ success: true, message: `Opción "${opcion}" agregada a ${categoria}` });
+    res.json({ success: true, message: `Opción "${opcionLimpia}" agregada a ${categoriaLimpia}` });
   } catch (error) {
     console.error('Error agregando opción:', error);
     res.status(500).json({ error: 'Error agregando opción' });

@@ -12,6 +12,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { apiService } from '../utils/apiService';
@@ -46,6 +50,12 @@ const EmailForm = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [messageType, setMessageType] = useState('success');
+  const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+  const [datosParaConfirmar, setDatosParaConfirmar] = useState(null);
+  
+  // Estado para diálogo de confirmación
+  const [openConfirm, setOpenConfirm] = useState(false);
+  const [datosAGuardar, setDatosAGuardar] = useState(null);
 
   // Cargar plantillas y opciones al montar
   useEffect(() => {
@@ -110,16 +120,14 @@ const EmailForm = () => {
 
   const handleOpenOutlook = async (e) => {
     e.preventDefault();
-    setLoading(true);
 
     try {
-      // Generar contenido del correo basado en plantilla seleccionada
+      // Validar que haya plantilla seleccionada
       const plantilla = plantillas.find(p => p.id === parseInt(selectedPlantilla));
       
       if (!plantilla) {
         setMessageType('error');
         setMessage('❌ Selecciona una plantilla');
-        setLoading(false);
         return;
       }
 
@@ -139,13 +147,32 @@ const EmailForm = () => {
 
       const asunto = plantilla.nombre;
 
-      // Guardar en base de datos con TEXTO PLANO
-      const data = await apiService.enviarCorreo({
+      // Guardar datos para confirmación
+      setDatosParaConfirmar({
         destinatario: formData.destinatario,
         asunto: asunto,
-        contenido: contenidoTexto,
-        productor: formData.operador,
+        contenidoTexto: contenidoTexto,
         contenidoHTML: contenidoHTML,
+        productor: formData.operador,
+      });
+
+      // Mostrar diálogo de confirmación
+      setOpenConfirmDialog(true);
+    } catch (error) {
+      setMessageType('error');
+      setMessage(`❌ Error: ${error.message}`);
+    }
+  };
+
+  const handleConfirmarEnvio = async () => {
+    setLoading(true);
+    try {
+      // Guardar en base de datos con TEXTO PLANO
+      const data = await apiService.enviarCorreo({
+        destinatario: datosParaConfirmar.destinatario,
+        asunto: datosParaConfirmar.asunto,
+        contenido: datosParaConfirmar.contenidoTexto,
+        productor: datosParaConfirmar.productor,
       });
 
       setMessageType('success');
@@ -173,7 +200,7 @@ const EmailForm = () => {
 
       setTimeout(() => {
         // Crear link mailto con HTML para que Outlook lo reciba con tabla bonita
-        const mailtoLink = `mailto:${encodeURIComponent(formData.destinatario)}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(contenidoHTML)}`;
+        const mailtoLink = `mailto:${encodeURIComponent(datosParaConfirmar.destinatario)}?subject=${encodeURIComponent(datosParaConfirmar.asunto)}&body=${encodeURIComponent(datosParaConfirmar.contenidoHTML)}`;
         
         // Abrir en nueva pestaña/ventana
         window.open(mailtoLink, '_blank');
@@ -195,6 +222,7 @@ const EmailForm = () => {
             persona_contacto: '',
           });
           setSelectedPlantilla('');
+          setOpenConfirmDialog(false);
         }, 500);
       }, 1500);
     } catch (error) {
@@ -841,6 +869,40 @@ RESPONSABLE DE FORMACIÓN: ${data.responsable_formacion}
           La fecha final se calcula automáticamente basada en los días de inspección.
         </Alert>
       </CardContent>
+
+      {/* Diálogo de Confirmación */}
+      <Dialog open={openConfirmDialog} onClose={() => setOpenConfirmDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>📧 Confirmar Envío de Correo</DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            ⚠️ Revisa los datos antes de continuar. ¿Deseas guardar y enviar este correo?
+          </Alert>
+          {datosParaConfirmar && (
+            <Box sx={{ backgroundColor: '#f5f5f5', p: 2, borderRadius: 1, mb: 2 }}>
+              <strong>Destinatario:</strong> {datosParaConfirmar.destinatario}
+              <br />
+              <strong>Asunto:</strong> {datosParaConfirmar.asunto}
+              <br />
+              <strong>Productor:</strong> {datosParaConfirmar.productor}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button 
+            onClick={() => setOpenConfirmDialog(false)}
+            variant="outlined"
+          >
+            ✏️ Corregir
+          </Button>
+          <Button 
+            onClick={handleConfirmarEnvio}
+            variant="contained"
+            disabled={loading}
+          >
+            {loading ? '⏳ Guardando...' : '✅ Guardar y Enviar'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Card>
   );
 };
