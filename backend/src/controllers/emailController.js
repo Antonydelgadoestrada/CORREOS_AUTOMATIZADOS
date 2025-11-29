@@ -1,7 +1,7 @@
 const pool = require('../config/database');
 
 const enviarCorreoController = async (req, res) => {
-  const { destinatario, asunto, contenido, productor, contenidoHTML } = req.body;
+  const { destinatario, asunto, contenido, productor } = req.body;
 
   try {
     // Validar datos
@@ -9,14 +9,14 @@ const enviarCorreoController = async (req, res) => {
       return res.status(400).json({ error: 'Falta información requerida' });
     }
 
-    // Guardar en base de datos Supabase con texto plano y HTML
+    // Guardar en base de datos Supabase - SOLO TEXTO PLANO
     const query = `
-      INSERT INTO correos_enviados (destinatario, asunto, productor, contenido, contenido_html, fecha_envio)
-      VALUES ($1, $2, $3, $4, $5, NOW())
+      INSERT INTO correos_enviados (destinatario, asunto, productor, contenido, fecha_envio)
+      VALUES ($1, $2, $3, $4, NOW())
       RETURNING id, destinatario, asunto, productor, fecha_envio;
     `;
     
-    const result = await pool.query(query, [destinatario, asunto, productor, contenido, contenidoHTML || contenido]);
+    const result = await pool.query(query, [destinatario, asunto, productor, contenido]);
 
     res.status(201).json({
       mensaje: 'Correo registrado exitosamente',
@@ -34,7 +34,7 @@ const enviarCorreoController = async (req, res) => {
 const obtenerCorreosEnviados = async (req, res) => {
   try {
     const query = `
-      SELECT id, destinatario, asunto, contenido, contenido_html, productor, fecha_envio, created_at
+      SELECT id, destinatario, asunto, contenido, productor, fecha_envio, created_at
       FROM correos_enviados
       ORDER BY fecha_envio DESC NULLS LAST, created_at DESC;
     `;
