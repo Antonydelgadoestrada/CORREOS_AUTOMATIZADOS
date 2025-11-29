@@ -20,20 +20,20 @@ export const apiService = {
     return response.json();
   },
 
-  async agregarOpcion(clave, valor, categoria) {
+  async agregarOpcion(categoria, opcion) {
     const response = await fetch(`${API_URL}/opciones`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clave, valor, categoria }),
+      body: JSON.stringify({ categoria, opcion }),
     });
     return response.json();
   },
 
-  async eliminarOpcion(id) {
+  async eliminarOpcion(categoria, opcion) {
     const response = await fetch(`${API_URL}/opciones`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
+      body: JSON.stringify({ categoria, opcion }),
     });
     return response.json();
   },
