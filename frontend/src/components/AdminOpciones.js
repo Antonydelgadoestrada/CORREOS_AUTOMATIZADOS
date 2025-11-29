@@ -64,13 +64,10 @@ const AdminOpciones = () => {
     try {
       const opcionGuardada = nuevaOpcion;
       await apiService.agregarOpcion(selectedCategoria, opcionGuardada);
-      setOpciones({
-        ...opciones,
-        [selectedCategoria]: [
-          ...(opciones[selectedCategoria] || []),
-          opcionGuardada,
-        ],
-      });
+      
+      // Recargar opciones desde BD
+      await cargarOpciones();
+      
       setMessageType('success');
       setMessage(`✅ Opción "${opcionGuardada}" agregada a ${selectedCategoria}`);
       setNuevaOpcion('');
@@ -84,10 +81,10 @@ const AdminOpciones = () => {
   const eliminarOpcion = async (categoria, opcion) => {
     try {
       await apiService.eliminarOpcion(categoria, opcion);
-      setOpciones({
-        ...opciones,
-        [categoria]: opciones[categoria].filter(o => o !== opcion),
-      });
+      
+      // Recargar opciones desde BD
+      await cargarOpciones();
+      
       setMessageType('success');
       setMessage(`✅ Opción "${opcion}" eliminada`);
     } catch (error) {
