@@ -19,6 +19,7 @@ import EmailForm from './components/EmailForm';
 import Calendar from './components/Calendar';
 import HistorialCorreos from './components/HistorialCorreos';
 import AdminOpciones from './components/AdminOpciones';
+import ReporteInspecciones from './components/ReporteInspecciones';
 import './App.css';
 
 const theme = createTheme({
@@ -72,6 +73,7 @@ function App() {
             <Tabs value={currentTab} onChange={handleTabChange} aria-label="navigation">
               <Tab icon={<MailIcon />} iconPosition="start" label="Enviar Correo" />
               <Tab icon={<EventIcon />} iconPosition="start" label="Calendario" />
+              <Tab icon={<EventIcon />} iconPosition="start" label="Reporte" />
               <Tab icon={<HistoryIcon />} iconPosition="start" label="Historial" />
               <Tab icon={<SettingsIcon />} iconPosition="start" label="Opciones" />
             </Tabs>
@@ -84,9 +86,12 @@ function App() {
             <Calendar />
           </TabPanel>
           <TabPanel value={currentTab} index={2}>
-            <HistorialCorreos />
+            <ReporteInspecciones />
           </TabPanel>
           <TabPanel value={currentTab} index={3}>
+            <HistorialCorreos />
+          </TabPanel>
+          <TabPanel value={currentTab} index={4}>
             <AdminOpciones />
           </TabPanel>
         </Container>

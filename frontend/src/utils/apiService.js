@@ -51,6 +51,20 @@ export const apiService = {
     const response = await fetch(`${API_URL}/eventos-inspecciones`);
     return response.json();
   },
+
+  async obtenerInspeccionesPorMes(anio, mes) {
+    const response = await fetch(`${API_URL}/inspecciones-por-mes?anio=${anio}&mes=${mes}`);
+    return response.json();
+  },
+
+  async reprogramarInspeccion(id, fecha_inicio, fecha_fin) {
+    const response = await fetch(`${API_URL}/eventos-inspecciones/${id}/reprogramar`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, fecha_inicio, fecha_fin }),
+    });
+    return response.json();
+  },
 };
 
 export default apiService;

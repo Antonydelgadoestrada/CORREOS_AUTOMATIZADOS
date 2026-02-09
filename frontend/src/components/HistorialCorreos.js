@@ -352,7 +352,7 @@ const HistorialCorreos = () => {
                 <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 1 }}>
                   Contenido del Correo
                 </Typography>
-                {selectedCorreo.contenido_html ? (
+                {(selectedCorreo.contenido_html || isHTMLString(selectedCorreo.contenido)) ? (
                   <Box
                     sx={{
                       backgroundColor: '#f9f9f9',
@@ -373,7 +373,7 @@ const HistorialCorreos = () => {
                         backgroundColor: '#f0f0f0',
                       },
                     }}
-                    dangerouslySetInnerHTML={{ __html: selectedCorreo.contenido_html }}
+                    dangerouslySetInnerHTML={{ __html: selectedCorreo.contenido_html || selectedCorreo.contenido }}
                   />
                 ) : (
                   <Box
@@ -401,5 +401,12 @@ const HistorialCorreos = () => {
     </Box>
   );
 };
+
+  // Detectar si una cadena contiene HTML (por ejemplo una tabla)
+  const isHTMLString = (str) => {
+    if (!str || typeof str !== 'string') return false;
+    // buscar etiquetas comunes de tabla o html
+    return /<\s*(table|tr|td|th|tbody|thead|tfoot)[^>]*>/i.test(str);
+  };
 
 export default HistorialCorreos;

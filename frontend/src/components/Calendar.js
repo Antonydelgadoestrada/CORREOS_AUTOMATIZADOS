@@ -3,7 +3,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { Card, CardContent, CardHeader, Box, Grid, Typography, Chip, Dialog, DialogContent, DialogTitle, Button, Alert, CircularProgress } from '@mui/material';
+import { Card, CardContent, CardHeader, Box, Grid, Typography, Chip, Dialog, DialogContent, DialogTitle, Button, Alert, CircularProgress, TextField } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { apiService } from '../utils/apiService';
 
@@ -11,13 +11,45 @@ const Calendar = () => {
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [openReprogramarDialog, setOpenReprogramarDialog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [nuevaFechaInicio, setNuevaFechaInicio] = useState('');
+  const [nuevaFechaFin, setNuevaFechaFin] = useState('');
 
   // Cargar eventos de la BD
   useEffect(() => {
     cargarEventos();
   }, []);
+
+  // Función para calcular el estado de la inspección
+  const calcularEstado = (evento) => {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    
+    const fechaInicio = new Date(evento.fecha_inicio);
+    const fechaFin = new Date(evento.fecha_fin);
+    fechaInicio.setHours(0, 0, 0, 0);
+    fechaFin.setHours(0, 0, 0, 0);
+
+    // Si fue reprogramada previamente
+    if (evento.estado === 'reprogramada') {
+      return { estado: 'Reprogramada', color: '#9e9e9e', icon: '🔄' };
+    }
+
+    // Si está dentro del rango de fechas (hoy es igual o después al inicio y antes o igual al fin)
+    if (hoy >= fechaInicio && hoy <= fechaFin) {
+      return { estado: 'En proceso', color: '#2196f3', icon: '⏳' };
+    }
+
+    // Si ya pasó la fecha fin
+    if (hoy > fechaFin) {
+      return { estado: 'Finalizada', color: '#4caf50', icon: '✅' };
+    }
+
+    // Si es futura
+    return { estado: 'Programada', color: '#ff9800', icon: '📋' };
+  };
 
   const cargarEventos = async () => {
     try {
@@ -25,14 +57,17 @@ const Calendar = () => {
       const data = await apiService.obtenerEventos();
       
       // Convertir eventos de la BD al formato de FullCalendar
-      const eventosFormateados = data.map(evento => ({
+      const eventosFormateados = data.map(evento => {
+        const estadoInfo = calcularEstado(evento);
+        return {
           id: evento.id.toString(),
-          title: `${evento.operador} - ${evento.auditor}`,
+          title: `${estadoInfo.icon} ${evento.operador} - ${evento.auditor}`,
           start: evento.fecha_inicio,
           end: evento.fecha_fin,
-          backgroundColor: evento.estado === 'completada' ? '#4caf50' : '#1976d2',
-          borderColor: evento.estado === 'completada' ? '#2e7d32' : '#1565c0',
+          backgroundColor: estadoInfo.color,
+          borderColor: estadoInfo.color,
           extendedProps: {
+            id: evento.id,
             operador: evento.operador,
             numero_operador: evento.numero_operador,
             dias_inspeccion: evento.dias_inspeccion,
@@ -44,11 +79,13 @@ const Calendar = () => {
             cultivo_producto: evento.cultivo_producto,
             lugar: evento.lugar,
             persona_contacto: evento.persona_contacto,
-            estado: evento.estado,
+            estadoDb: evento.estado,
+            estadoCalculado: estadoInfo.estado,
           },
-        }));
+        };
+      });
         
-        setEvents(eventosFormateados);
+      setEvents(eventosFormateados);
     } catch (error) {
       console.error('Error:', error);
       setError('Error de conexión');
@@ -67,12 +104,72 @@ const Calendar = () => {
     setSelectedEvent(null);
   };
 
+  const handleOpenReprogramarDialog = () => {
+    if (selectedEvent) {
+      const fechaInicio = selectedEvent.start.toISOString().split('T')[0];
+      // Si el evento no tiene end (evento de 1 día), usar la misma fecha de inicio
+      const fechaFin = selectedEvent.end 
+        ? selectedEvent.end.toISOString().split('T')[0]
+        : fechaInicio;
+      
+      setNuevaFechaInicio(fechaInicio);
+      setNuevaFechaFin(fechaFin);
+      setOpenReprogramarDialog(true);
+    }
+  };
+
+  const handleCloseReprogramarDialog = () => {
+    setOpenReprogramarDialog(false);
+    setNuevaFechaInicio('');
+    setNuevaFechaFin('');
+  };
+
+  const handleConfirmarReprogramacion = async () => {
+    try {
+      if (!nuevaFechaInicio || !nuevaFechaFin) {
+        alert('Por favor completa ambas fechas');
+        return;
+      }
+
+      const response = await apiService.reprogramarInspeccion(
+        selectedEvent.extendedProps.id,
+        nuevaFechaInicio,
+        nuevaFechaFin
+      );
+
+      if (response.mensaje) {
+        alert('Inspección reprogramada exitosamente');
+        handleCloseReprogramarDialog();
+        handleCloseDialog();
+        cargarEventos();
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al reprogramar la inspección');
+    }
+  };
+
   const formatearFecha = (fecha) => {
     return new Date(fecha).toLocaleDateString('es-ES', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
     });
+  };
+
+  const obtenerColorEstado = (estado) => {
+    switch (estado) {
+      case 'Programada':
+        return 'warning';
+      case 'En proceso':
+        return 'info';
+      case 'Finalizada':
+        return 'success';
+      case 'Reprogramada':
+        return 'default';
+      default:
+        return 'default';
+    }
   };
 
   if (loading) {
@@ -120,6 +217,17 @@ const Calendar = () => {
           <DialogContent>
             <Box sx={{ pt: 2 }}>
               <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="textSecondary">
+                    Estado
+                  </Typography>
+                  <Chip 
+                    label={selectedEvent.extendedProps.estadoCalculado} 
+                    color={obtenerColorEstado(selectedEvent.extendedProps.estadoCalculado)}
+                    sx={{ fontWeight: 'bold' }}
+                  />
+                </Grid>
+
                 <Grid item xs={12}>
                   <Typography variant="subtitle2" color="textSecondary">
                     Operador
@@ -228,19 +336,68 @@ const Calendar = () => {
                 </Grid>
 
                 <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="textSecondary">
-                    Estado
-                  </Typography>
-                  <Chip 
-                    label={selectedEvent.extendedProps.estado} 
-                    color={selectedEvent.extendedProps.estado === 'completada' ? 'success' : 'primary'}
-                  />
+                  <Button 
+                    variant="contained" 
+                    color="secondary" 
+                    fullWidth
+                    onClick={handleOpenReprogramarDialog}
+                  >
+                    🔄 Reprogramar Inspección
+                  </Button>
                 </Grid>
               </Grid>
             </Box>
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Dialog para reprogramar */}
+      <Dialog open={openReprogramarDialog} onClose={handleCloseReprogramarDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>🔄 Reprogramar Inspección</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 2 }}>
+              Datos del Inspector
+            </Typography>
+            <Box sx={{ p: 2, backgroundColor: '#f5f5f5', borderRadius: 1, mb: 3 }}>
+              <Typography variant="body2"><strong>Operador:</strong> {selectedEvent?.extendedProps.operador}</Typography>
+              <Typography variant="body2"><strong>Auditor:</strong> {selectedEvent?.extendedProps.auditor}</Typography>
+              <Typography variant="body2"><strong>Norma:</strong> {selectedEvent?.extendedProps.norma}</Typography>
+            </Box>
+
+            <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 1 }}>
+              Nueva Fecha de Inicio
+            </Typography>
+            <TextField
+              type="date"
+              value={nuevaFechaInicio}
+              onChange={(e) => setNuevaFechaInicio(e.target.value)}
+              fullWidth
+              sx={{ mb: 2 }}
+              InputLabelProps={{ shrink: true }}
+            />
+
+            <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 1 }}>
+              Nueva Fecha de Fin
+            </Typography>
+            <TextField
+              type="date"
+              value={nuevaFechaFin}
+              onChange={(e) => setNuevaFechaFin(e.target.value)}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+          </Box>
+        </DialogContent>
+        <Box sx={{ p: 2, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+          <Button variant="outlined" onClick={handleCloseReprogramarDialog}>
+            ❌ Cancelar
+          </Button>
+          <Button variant="contained" color="secondary" onClick={handleConfirmarReprogramacion}>
+            ✅ Guardar Reprogramación
+          </Button>
+        </Box>
+      </Dialog>
     </>
   );
 };
