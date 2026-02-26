@@ -4,37 +4,60 @@ const db = require('../config/database');
 const crearEventoInspeccion = (req, res) => {
   const { 
     titulo,
+    operador,
+    numero_operador,
     fecha_inicio, 
     fecha_fin,
+    dias_inspeccion,
+    auditor,
+    norma,
+    alcance,
+    tipo,
+    modalidad,
+    cultivo_producto,
+    lugar,
+    persona_contacto,
     estado,
     descripcion
   } = req.body;
 
   try {
     // Validar datos requeridos
-    if (!titulo || !fecha_inicio || !fecha_fin) {
-      return res.status(400).json({ error: 'Falta información requerida' });
+    if (!fecha_inicio || !fecha_fin) {
+      return res.status(400).json({ error: 'Falta fecha_inicio y fecha_fin' });
     }
+
+    // Crear título si no viene
+    const eventoTitulo = titulo || `Auditoría - ${operador || 'Sin especificar'}`;
 
     const stmt = db.prepare(`
       INSERT INTO eventos_inspecciones 
-      (titulo, fecha_inicio, fecha_fin, estado, descripcion, creado_en)
-      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      (titulo, operador, numero_operador, fecha_inicio, fecha_fin, dias_inspeccion, auditor, norma, alcance, tipo, modalidad, cultivo_producto, lugar, persona_contacto, estado, descripcion, creado_en)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `);
     
     const result = stmt.run(
-      titulo, 
-      fecha_inicio, 
+      eventoTitulo,
+      operador || '',
+      numero_operador || '',
+      fecha_inicio,
       fecha_fin,
+      dias_inspeccion || 1,
+      auditor || '',
+      norma || '',
+      alcance || '',
+      tipo || '',
+      modalidad || '',
+      cultivo_producto || '',
+      lugar || '',
+      persona_contacto || '',
       estado || 'Programada',
       descripcion || ''
     );
 
     // Obtener el evento creado
     const getStmt = db.prepare(`
-      SELECT id, titulo, fecha_inicio, fecha_fin, estado, descripcion
-      FROM eventos_inspecciones
-      WHERE id = ?
+      SELECT * FROM eventos_inspecciones WHERE id = ?
     `);
     const evento = getStmt.get(result.lastInsertRowid);
 

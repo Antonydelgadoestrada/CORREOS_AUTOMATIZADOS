@@ -49,9 +49,20 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS eventos_inspecciones (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    titulo TEXT NOT NULL,
+    titulo TEXT,
+    operador TEXT,
+    numero_operador TEXT,
     fecha_inicio DATETIME NOT NULL,
     fecha_fin DATETIME NOT NULL,
+    dias_inspeccion INTEGER,
+    auditor TEXT,
+    norma TEXT,
+    alcance TEXT,
+    tipo TEXT,
+    modalidad TEXT,
+    cultivo_producto TEXT,
+    lugar TEXT,
+    persona_contacto TEXT,
     estado TEXT DEFAULT 'Programada',
     descripcion TEXT,
     creado_en DATETIME DEFAULT CURRENT_TIMESTAMP

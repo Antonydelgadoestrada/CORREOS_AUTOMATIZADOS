@@ -33,9 +33,9 @@ const enviarCorreoController = (req, res) => {
 const obtenerCorreosEnviados = (req, res) => {
   try {
     const stmt = db.prepare(`
-      SELECT id, destinatario, asunto, contenido, contenido_html, productor, fecha_envio, creado_en
+      SELECT id, destinatario, asunto, contenido, contenido_html, productor, fecha_envio
       FROM correos_enviados
-      ORDER BY fecha_envio DESC, creado_en DESC
+      ORDER BY fecha_envio DESC
     `);
     
     const correos = stmt.all();
@@ -54,8 +54,19 @@ const obtenerEventosInspecciones = (req, res) => {
       SELECT 
         id, 
         titulo,
+        operador,
+        numero_operador,
         fecha_inicio, 
         fecha_fin,
+        dias_inspeccion,
+        auditor,
+        norma,
+        alcance,
+        tipo,
+        modalidad,
+        cultivo_producto,
+        lugar,
+        persona_contacto,
         estado,
         descripcion,
         creado_en
@@ -85,8 +96,19 @@ const obtenerInspeccionesPorMes = (req, res) => {
       SELECT 
         id, 
         titulo,
+        operador,
+        numero_operador,
         fecha_inicio, 
         fecha_fin,
+        dias_inspeccion,
+        auditor,
+        norma,
+        alcance,
+        tipo,
+        modalidad,
+        cultivo_producto,
+        lugar,
+        persona_contacto,
         estado,
         descripcion,
         creado_en
