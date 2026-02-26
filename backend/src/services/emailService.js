@@ -1,29 +1,27 @@
-const pool = require('../config/database');
+const db = require('../config/database');
 
 // Obtener todos los correos
-const obtenerCorreos = async () => {
-  const result = await pool.query('SELECT * FROM correos_enviados ORDER BY fecha_envio DESC');
-  return result.rows;
+const obtenerCorreos = () => {
+  const stmt = db.prepare('SELECT * FROM correos_enviados ORDER BY fecha_envio DESC');
+  return stmt.all();
 };
 
 // Obtener correos por productor
-const obtenerCorreosPorProductor = async (productor) => {
-  const result = await pool.query(
-    'SELECT * FROM correos_enviados WHERE productor = $1 ORDER BY fecha_envio DESC',
-    [productor]
+const obtenerCorreosPorProductor = (productor) => {
+  const stmt = db.prepare(
+    'SELECT * FROM correos_enviados WHERE productor = ? ORDER BY fecha_envio DESC'
   );
-  return result.rows;
+  return stmt.all(productor);
 };
 
 // Guardar evento en calendario
-const guardarEventoCalendario = async (productor, tipo_inspeccion, fecha_inicio, fecha_fin) => {
-  const result = await pool.query(
-    `INSERT INTO eventos_calendario (productor, tipo_inspeccion, fecha_inicio, fecha_fin)
-     VALUES ($1, $2, $3, $4)
-     RETURNING *;`,
-    [productor, tipo_inspeccion, fecha_inicio, fecha_fin]
-  );
-  return result.rows[0];
+const guardarEventoCalendario = (productor, tipo_inspeccion, fecha_inicio, fecha_fin) => {
+  const stmt = db.prepare(`
+    INSERT INTO eventos_inspecciones (titulo, fecha_inicio, fecha_fin, descripcion)
+    VALUES (?, ?, ?, ?)
+  `);
+  const result = stmt.run(productor, fecha_inicio, fecha_fin, tipo_inspeccion);
+  return { id: result.lastInsertRowid };
 };
 
 module.exports = {
