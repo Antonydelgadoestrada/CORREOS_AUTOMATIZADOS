@@ -1,55 +1,46 @@
-const pool = require('../config/database');
+const db = require('../config/database');
 
 // Crear evento de inspección
-const crearEventoInspeccion = async (req, res) => {
+const crearEventoInspeccion = (req, res) => {
   const { 
-    operador, 
-    numero_operador, 
+    titulo,
     fecha_inicio, 
     fecha_fin,
-    dias_inspeccion,
-    auditor, 
-    norma, 
-    alcance, 
-    tipo, 
-    modalidad,
-    cultivo_producto,
-    lugar,
-    persona_contacto
+    estado,
+    descripcion
   } = req.body;
 
   try {
     // Validar datos requeridos
-    if (!operador || !fecha_inicio || !auditor) {
+    if (!titulo || !fecha_inicio || !fecha_fin) {
       return res.status(400).json({ error: 'Falta información requerida' });
     }
 
-    const query = `
+    const stmt = db.prepare(`
       INSERT INTO eventos_inspecciones 
-      (operador, numero_operador, fecha_inicio, fecha_fin, dias_inspeccion, auditor, norma, alcance, tipo, modalidad, cultivo_producto, lugar, persona_contacto, estado)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'programada')
-      RETURNING id, operador, numero_operador, fecha_inicio, fecha_fin, dias_inspeccion, auditor, norma, alcance, tipo, modalidad, cultivo_producto, lugar, persona_contacto, estado;
-    `;
+      (titulo, fecha_inicio, fecha_fin, estado, descripcion, creado_en)
+      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `);
     
-    const result = await pool.query(query, [
-      operador, 
-      numero_operador, 
+    const result = stmt.run(
+      titulo, 
       fecha_inicio, 
       fecha_fin,
-      dias_inspeccion,
-      auditor, 
-      norma, 
-      alcance, 
-      tipo, 
-      modalidad,
-      cultivo_producto,
-      lugar,
-      persona_contacto
-    ]);
+      estado || 'Programada',
+      descripcion || ''
+    );
+
+    // Obtener el evento creado
+    const getStmt = db.prepare(`
+      SELECT id, titulo, fecha_inicio, fecha_fin, estado, descripcion
+      FROM eventos_inspecciones
+      WHERE id = ?
+    `);
+    const evento = getStmt.get(result.lastInsertRowid);
 
     res.status(201).json({
       mensaje: 'Evento de inspección creado exitosamente',
-      evento: result.rows[0],
+      evento,
     });
   } catch (error) {
     console.error('Error:', error);

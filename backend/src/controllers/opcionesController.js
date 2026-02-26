@@ -1,16 +1,17 @@
-const pool = require('../config/database');
+const db = require('../config/database');
 
 // Obtener todas las opciones
-const obtenerOpciones = async (req, res) => {
+const obtenerOpciones = (req, res) => {
   try {
-    const result = await pool.query('SELECT categoria, opcion FROM opciones ORDER BY categoria, opcion');
+    const stmt = db.prepare('SELECT categoria, valor FROM opciones ORDER BY categoria, valor');
+    const rows = stmt.all();
     
     const opciones = {};
-    result.rows.forEach(row => {
+    rows.forEach(row => {
       if (!opciones[row.categoria]) {
         opciones[row.categoria] = [];
       }
-      opciones[row.categoria].push(row.opcion);
+      opciones[row.categoria].push(row.valor);
     });
 
     res.json(opciones);
@@ -21,7 +22,7 @@ const obtenerOpciones = async (req, res) => {
 };
 
 // Agregar nueva opción
-const agregarOpcion = async (req, res) => {
+const agregarOpcion = (req, res) => {
   try {
     const { categoria, opcion } = req.body;
 
@@ -39,20 +40,19 @@ const agregarOpcion = async (req, res) => {
     const opcionLimpia = opcion.trim();
 
     // Verificar si ya existe
-    const existente = await pool.query(
-      'SELECT * FROM opciones WHERE LOWER(categoria) = LOWER($1) AND LOWER(opcion) = LOWER($2)',
-      [categoriaLimpia, opcionLimpia]
-    );
+    const existente = db.prepare(
+      'SELECT * FROM opciones WHERE LOWER(categoria) = LOWER(?) AND LOWER(valor) = LOWER(?)'
+    ).get(categoriaLimpia, opcionLimpia);
 
-    if (existente.rows.length > 0) {
+    if (existente) {
       return res.status(400).json({ error: 'La opción ya existe' });
     }
 
     // Insertar nueva opción
-    await pool.query(
-      'INSERT INTO opciones (categoria, opcion) VALUES ($1, $2)',
-      [categoriaLimpia, opcionLimpia]
+    const stmt = db.prepare(
+      'INSERT INTO opciones (categoria, valor, creado_en) VALUES (?, ?, CURRENT_TIMESTAMP)'
     );
+    stmt.run(categoriaLimpia, opcionLimpia);
 
     res.json({ success: true, message: `Opción "${opcionLimpia}" agregada a ${categoriaLimpia}` });
   } catch (error) {
@@ -62,7 +62,7 @@ const agregarOpcion = async (req, res) => {
 };
 
 // Eliminar opción
-const eliminarOpcion = async (req, res) => {
+const eliminarOpcion = (req, res) => {
   try {
     const { categoria, opcion } = req.body;
 
@@ -70,10 +70,10 @@ const eliminarOpcion = async (req, res) => {
       return res.status(400).json({ error: 'Categoría y opción son requeridas' });
     }
 
-    await pool.query(
-      'DELETE FROM opciones WHERE categoria = $1 AND opcion = $2',
-      [categoria, opcion]
+    const stmt = db.prepare(
+      'DELETE FROM opciones WHERE categoria = ? AND valor = ?'
     );
+    stmt.run(categoria, opcion);
 
     res.json({ success: true, message: `Opción "${opcion}" eliminada` });
   } catch (error) {
