@@ -172,4 +172,69 @@ const reprogramarInspeccion = (req, res) => {
   }
 };
 
-module.exports = { enviarCorreoController, obtenerCorreosEnviados, obtenerEventosInspecciones, obtenerInspeccionesPorMes, reprogramarInspeccion };
+// Obtener firma empresa
+const obtenerFirma = (req, res) => {
+  console.log('✅ obtenerFirma endpoint called');
+  try {
+    const stmt = db.prepare(`
+      SELECT id, nombre, cargo, contenido_html, imagen_base64, nombre_imagen, empresa_nombre, telefono, email, web, actualizado_en
+      FROM firma_empresa
+      LIMIT 1
+    `);
+    
+    const firma = stmt.get();
+
+    if (!firma) {
+      return res.json(null);
+    }
+
+    res.json(firma);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Error obteniendo firma' });
+  }
+};
+
+// Actualizar/crear firma empresa
+const actualizarFirma = (req, res) => {
+  try {
+    const { nombre, cargo, contenido_html, imagen_base64, nombre_imagen, empresa_nombre, telefono, email, web } = req.body;
+
+    // Verificar si ya existe firma
+    const existente = db.prepare('SELECT id FROM firma_empresa LIMIT 1').get();
+
+    if (existente) {
+      // Actualizar
+      const stmt = db.prepare(`
+        UPDATE firma_empresa
+        SET nombre = ?, cargo = ?, contenido_html = ?, imagen_base64 = ?, nombre_imagen = ?, empresa_nombre = ?, telefono = ?, email = ?, web = ?, actualizado_en = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `);
+      
+      stmt.run(nombre, cargo, contenido_html, imagen_base64, nombre_imagen, empresa_nombre, telefono, email, web, existente.id);
+      
+      return res.json({
+        mensaje: 'Firma actualizada exitosamente',
+        id: existente.id
+      });
+    } else {
+      // Crear nueva
+      const stmt = db.prepare(`
+        INSERT INTO firma_empresa (nombre, cargo, contenido_html, imagen_base64, nombre_imagen, empresa_nombre, telefono, email, web)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      
+      const result = stmt.run(nombre, cargo, contenido_html, imagen_base64, nombre_imagen, empresa_nombre, telefono, email, web);
+      
+      res.status(201).json({
+        mensaje: 'Firma creada exitosamente',
+        id: result.lastInsertRowid
+      });
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { enviarCorreoController, obtenerCorreosEnviados, obtenerEventosInspecciones, obtenerInspeccionesPorMes, reprogramarInspeccion, obtenerFirma, actualizarFirma };

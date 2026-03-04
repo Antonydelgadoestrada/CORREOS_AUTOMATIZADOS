@@ -65,6 +65,20 @@ export const apiService = {
     });
     return response.json();
   },
+
+  async obtenerFirma() {
+    const response = await fetch(`${API_URL}/firma`);
+    return response.json();
+  },
+
+  async actualizarFirma(datos) {
+    const response = await fetch(`${API_URL}/firma`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(datos),
+    });
+    return response.json();
+  },
 };
 
 export default apiService;

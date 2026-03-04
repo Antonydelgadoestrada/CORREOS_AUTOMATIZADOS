@@ -24,6 +24,7 @@ const EmailForm = () => {
   const [plantillas, setPlantillas] = useState([]);
   const [opciones, setOpciones] = useState({});
   const [selectedPlantilla, setSelectedPlantilla] = useState('');
+  const [firma, setFirma] = useState(null);
   
   const [formData, setFormData] = useState({
     destinatario: '',
@@ -74,6 +75,12 @@ const EmailForm = () => {
       // Cargar opciones del backend
       const data = await apiService.obtenerOpciones();
       setOpciones(data);
+
+      // Cargar firma del backend
+      const firmaData = await apiService.obtenerFirma();
+      if (firmaData) {
+        setFirma(firmaData);
+      }
     } catch (error) {
       console.error('Error cargando plantillas:', error);
       // Opciones por defecto
@@ -138,12 +145,18 @@ const EmailForm = () => {
         ? generarContenidoExterna(formData)
         : generarContenidoOrdenTrabajo(formData);
 
+      // AGREGAR FIRMA AL TEXTO PLANO
+      contenidoTexto += generarFirmaTexto();
+
       // Construir contenido HTML (para mailto en Outlook)
       let contenidoHTML = plantilla.nombre === 'Planificación Interna' 
         ? generarHTMLInterna(formData)
         : plantilla.nombre === 'Planificación Externa'
         ? generarHTMLExterna(formData)
         : generarHTMLOrdenTrabajo(formData);
+
+      // AGREGAR FIRMA AL HTML (antes del cierre del body)
+      contenidoHTML = contenidoHTML.replace('</body></html>', generarFirmaHTML() + '</body></html>');
 
       const asunto = plantilla.nombre;
 
@@ -504,6 +517,78 @@ RESPONSABLE DE FORMACIÓN: ${data.responsable_formacion}
     // Restar 1 porque el conteo empieza desde el día de inicio
     fecha.setDate(fecha.getDate() + parseInt(dias) - 1);
     return fecha.toISOString().split('T')[0];
+  };
+
+  const generarFirmaHTML = () => {
+    if (!firma) return '';
+    
+    let firmaHTML = '<hr style="border: none; border-top: 2px solid #cccccc; margin: 20px 0;">';
+    firmaHTML += '<div style="font-family: Arial, sans-serif; color: #333; font-size: 12px; margin-top: 20px;">';
+    
+    if (firma.nombre) {
+      firmaHTML += `<div style="font-weight: bold; font-size: 13px; margin-bottom: 5px;">${firma.nombre}</div>`;
+    }
+    
+    if (firma.cargo) {
+      firmaHTML += `<div style="color: #666; margin-bottom: 5px;">${firma.cargo}</div>`;
+    }
+    
+    if (firma.empresa_nombre) {
+      firmaHTML += `<div style="font-weight: bold; margin-bottom: 10px;">${firma.empresa_nombre}</div>`;
+    }
+    
+    if (firma.telefono || firma.email || firma.web) {
+      firmaHTML += '<div style="margin-bottom: 10px;">';
+      if (firma.telefono) firmaHTML += `<div>☎️ ${firma.telefono}</div>`;
+      if (firma.email) firmaHTML += `<div>📧 <a href="mailto:${firma.email}">${firma.email}</a></div>`;
+      if (firma.web) firmaHTML += `<div>🌐 <a href="https://${firma.web}" target="_blank">${firma.web}</a></div>`;
+      firmaHTML += '</div>';
+    }
+    
+    if (firma.imagen_base64) {
+      const maxWidth = '150px';
+      firmaHTML += `<div style="margin-top: 10px;"><img src="${firma.imagen_base64}" style="max-width: ${maxWidth}; height: auto;"></div>`;
+    }
+    
+    if (firma.contenido_html) {
+      firmaHTML += `<div style="margin-top: 10px; color: #666;">${firma.contenido_html}</div>`;
+    }
+    
+    firmaHTML += '</div>';
+    return firmaHTML;
+  };
+
+  const generarFirmaTexto = () => {
+    if (!firma) return '';
+    
+    let firmaTexto = '\n\n' + '─'.repeat(60) + '\n';
+    
+    if (firma.nombre) {
+      firmaTexto += `${firma.nombre}\n`;
+    }
+    
+    if (firma.cargo) {
+      firmaTexto += `${firma.cargo}\n`;
+    }
+    
+    if (firma.empresa_nombre) {
+      firmaTexto += `${firma.empresa_nombre}\n`;
+    }
+    
+    if (firma.telefono || firma.email || firma.web) {
+      firmaTexto += '\n';
+      if (firma.telefono) firmaTexto += `☎️ ${firma.telefono}\n`;
+      if (firma.email) firmaTexto += `📧 ${firma.email}\n`;
+      if (firma.web) firmaTexto += `🌐 ${firma.web}\n`;
+    }
+    
+    if (firma.contenido_html) {
+      // Quitar tags HTML para el texto plano
+      const textoLimpio = firma.contenido_html.replace(/<[^>]*>/g, '');
+      firmaTexto += `\n${textoLimpio}\n`;
+    }
+    
+    return firmaTexto;
   };
 
   return (

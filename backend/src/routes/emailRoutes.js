@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { enviarCorreoController, obtenerCorreosEnviados, obtenerEventosInspecciones, obtenerInspeccionesPorMes, reprogramarInspeccion } = require('../controllers/emailController');
+const { enviarCorreoController, obtenerCorreosEnviados, obtenerEventosInspecciones, obtenerInspeccionesPorMes, reprogramarInspeccion, obtenerFirma, actualizarFirma } = require('../controllers/emailController');
 const { obtenerOpciones, agregarOpcion, eliminarOpcion } = require('../controllers/opcionesController');
 const { crearEventoInspeccion } = require('../controllers/eventosController');
 
@@ -26,5 +26,9 @@ router.post('/eventos-inspecciones', crearEventoInspeccion);
 router.get('/opciones', obtenerOpciones);
 router.post('/opciones', agregarOpcion);
 router.delete('/opciones', eliminarOpcion);
+
+// Rutas para firma empresa
+router.get('/firma', obtenerFirma);
+router.post('/firma', actualizarFirma);
 
 module.exports = router;

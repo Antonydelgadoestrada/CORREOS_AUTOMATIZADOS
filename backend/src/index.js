@@ -31,23 +31,34 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Servir archivos estáticos del frontend compilado
-const frontendBuildPath = path.join(__dirname, '../../frontend/build');
-app.use(express.static(frontendBuildPath));
-
-// Rutas API
+// Rutas API (ANTES de archivos estáticos y React)
 app.get('/api/health', (req, res) => {
   res.json({ mensaje: 'Backend funcionando correctamente' });
+});
+
+// Log all requests to /api
+app.use('/api', (req, res, next) => {
+  console.log(`[API] ${req.method} ${req.path}`);
+  next();
 });
 
 // Rutas de email
 app.use('/api', emailRoutes);
 
+// 404 handler para /api que no existen
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: `API endpoint not found: ${req.method} ${req.path}` });
+});
+
+// Servir archivos estáticos del frontend compilado DESPUÉS de las rutas /api
+const frontendBuildPath = path.join(__dirname, '../../frontend/build');
+app.use(express.static(frontendBuildPath));
+
 // Middleware para servir React en cualquier ruta que no sea /api
 app.use((req, res, next) => {
-  // Si la ruta empieza con /api, continuar al siguiente middleware
+  // Si la ruta empieza con /api, ir al siguiente middleware (404)
   if (req.path.startsWith('/api')) {
-    return next();
+    return res.status(404).json({ error: `API endpoint not found: ${req.method} ${req.path}` });
   }
   // Si no es /api, servir el index.html de React
   res.sendFile(path.join(frontendBuildPath, 'index.html'));

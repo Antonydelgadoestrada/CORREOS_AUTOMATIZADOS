@@ -67,6 +67,20 @@ db.exec(`
     descripcion TEXT,
     creado_en DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS firma_empresa (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT,
+    cargo TEXT,
+    contenido_html TEXT,
+    imagen_base64 TEXT,
+    nombre_imagen TEXT,
+    empresa_nombre TEXT,
+    telefono TEXT,
+    email TEXT,
+    web TEXT,
+    actualizado_en DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 console.log(`✅ Base de datos SQLite portátil: ${dbPath}`);
