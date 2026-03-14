@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const { enviarCorreo } = require('../utils/nodemailer');
 
 const enviarCorreoController = (req, res) => {
   const { destinatario, asunto, contenido, productor, contenido_html } = req.body;
@@ -23,6 +24,53 @@ const enviarCorreoController = (req, res) => {
       destinatario,
       productor,
     });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Nuevo endpoint para enviar automáticamente
+const enviarCorreoAutomaticamente = async (req, res) => {
+  const { destinatario, asunto, contenido, productor, contenido_html } = req.body;
+
+  try {
+    // Validar datos
+    if (!destinatario || !asunto || !contenido) {
+      return res.status(400).json({ error: 'Falta información requerida' });
+    }
+
+    // Guardar en base de datos
+    const stmt = db.prepare(`
+      INSERT INTO correos_enviados (destinatario, asunto, productor, contenido, contenido_html, fecha_envio)
+      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `);
+    
+    const result = stmt.run(destinatario, asunto, productor, contenido, contenido_html || null);
+
+    // Enviar por SendGrid
+    try {
+      await enviarCorreo(destinatario, asunto, contenido_html || contenido);
+      
+      res.status(201).json({
+        mensaje: '✅ Correo enviado exitosamente',
+        id: result.lastInsertRowid,
+        destinatario,
+        productor,
+        enviado: true,
+      });
+    } catch (sendError) {
+      // Si falla el envío, pero se guardó en BD, devolver error pero con ID
+      console.error('Error enviando con SendGrid:', sendError);
+      res.status(207).json({
+        mensaje: '⚠️ Correo guardado pero no se pudo enviar por email',
+        id: result.lastInsertRowid,
+        destinatario,
+        productor,
+        enviado: false,
+        error: sendError.message,
+      });
+    }
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: error.message });
@@ -237,4 +285,4 @@ const actualizarFirma = (req, res) => {
   }
 };
 
-module.exports = { enviarCorreoController, obtenerCorreosEnviados, obtenerEventosInspecciones, obtenerInspeccionesPorMes, reprogramarInspeccion, obtenerFirma, actualizarFirma };
+module.exports = { enviarCorreoController, enviarCorreoAutomaticamente, obtenerCorreosEnviados, obtenerEventosInspecciones, obtenerInspeccionesPorMes, reprogramarInspeccion, obtenerFirma, actualizarFirma };

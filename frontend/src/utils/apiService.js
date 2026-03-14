@@ -10,6 +10,15 @@ export const apiService = {
     return response.json();
   },
 
+  async enviarCorreoAutomaticamente(datos) {
+    const response = await fetch(`${API_URL}/enviar-correo-automatico`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(datos),
+    });
+    return response.json();
+  },
+
   async obtenerCorreos() {
     const response = await fetch(`${API_URL}/correos-enviados`);
     return response.json();

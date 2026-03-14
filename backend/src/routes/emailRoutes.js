@@ -1,11 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { enviarCorreoController, obtenerCorreosEnviados, obtenerEventosInspecciones, obtenerInspeccionesPorMes, reprogramarInspeccion, obtenerFirma, actualizarFirma } = require('../controllers/emailController');
+const { enviarCorreoController, enviarCorreoAutomaticamente, obtenerCorreosEnviados, obtenerEventosInspecciones, obtenerInspeccionesPorMes, reprogramarInspeccion, obtenerFirma, actualizarFirma } = require('../controllers/emailController');
 const { obtenerOpciones, agregarOpcion, eliminarOpcion } = require('../controllers/opcionesController');
 const { crearEventoInspeccion } = require('../controllers/eventosController');
 
-// Ruta para enviar correo
+// Ruta para enviar correo (solo guardar)
 router.post('/enviar-correo', enviarCorreoController);
+
+// Ruta para enviar correo automáticamente por SendGrid
+router.post('/enviar-correo-automatico', enviarCorreoAutomaticamente);
 
 // Ruta para obtener correos enviados
 router.get('/correos-enviados', obtenerCorreosEnviados);
