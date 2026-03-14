@@ -24,9 +24,11 @@ import {
   MenuItem,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import GetAppIcon from '@mui/icons-material/GetApp';
 import { apiService } from '../utils/apiService';
 import CloseIcon from '@mui/icons-material/Close';
 import ClearIcon from '@mui/icons-material/Clear';
+import { descargarHTMLComoImagen } from '../utils/htmlToImage';
 
 const HistorialCorreos = () => {
   const [correos, setCorreos] = useState([]);
@@ -34,6 +36,7 @@ const HistorialCorreos = () => {
   const [message, setMessage] = useState(null);
   const [messageType, setMessageType] = useState('success');
   const [selectedCorreo, setSelectedCorreo] = useState(null);
+  const [descargando, setDescargando] = useState(false);
 
   // Filtros
   const [filtroProductor, setFiltroProductor] = useState('');
@@ -67,6 +70,33 @@ const HistorialCorreos = () => {
 
   const handleCloseDetalle = () => {
     setSelectedCorreo(null);
+  };
+
+  const handleDescargarComoImagen = async () => {
+    if (!selectedCorreo || !selectedCorreo.contenido_html) {
+      setMessageType('warning');
+      setMessage('⚠️ No hay contenido HTML disponible para descargar');
+      return;
+    }
+
+    try {
+      setDescargando(true);
+      const nombreArchivo = `Plantilla_${selectedCorreo.asunto.replace(/\s+/g, '_')}_${selectedCorreo.id}`;
+      await descargarHTMLComoImagen(selectedCorreo.contenido_html, nombreArchivo);
+      
+      setMessageType('success');
+      setMessage('✅ Imagen descargada exitosamente');
+      
+      setTimeout(() => {
+        setMessage(null);
+      }, 3000);
+    } catch (error) {
+      console.error('Error descargando imagen:', error);
+      setMessageType('error');
+      setMessage('❌ Error al descargar la imagen');
+    } finally {
+      setDescargando(false);
+    }
   };
 
   const formatearFecha = (fecha) => {
@@ -393,6 +423,24 @@ const HistorialCorreos = () => {
                     {selectedCorreo.contenido}
                   </Box>
                 )}
+              </Grid>
+
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 1 }}>
+                  Descargar Plantilla
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    startIcon={<GetAppIcon />}
+                    onClick={handleDescargarComoImagen}
+                    disabled={descargando || !selectedCorreo.contenido_html}
+                    fullWidth
+                  >
+                    {descargando ? <CircularProgress size="1.5rem" /> : 'Descargar como Imagen'}
+                  </Button>
+                </Box>
               </Grid>
             </Grid>
           </CardContent>

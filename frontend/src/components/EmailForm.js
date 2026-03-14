@@ -180,12 +180,13 @@ const EmailForm = () => {
   const handleConfirmarEnvio = async () => {
     setLoading(true);
     try {
-      // Guardar en base de datos con TEXTO PLANO
+      // Guardar en base de datos con TEXTO PLANO y HTML
       const data = await apiService.enviarCorreo({
         destinatario: datosParaConfirmar.destinatario,
         asunto: datosParaConfirmar.asunto,
         contenido: datosParaConfirmar.contenidoTexto,
         productor: datosParaConfirmar.productor,
+        contenido_html: datosParaConfirmar.contenidoHTML,
       });
 
       setMessageType('success');
@@ -273,11 +274,26 @@ PERSONA DE CONTACTO: ${data.persona_contacto}
   };
 
   const generarHTMLInterna = (data) => {
-    return `<html><body style="font-family: Arial, sans-serif;">
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; color: #333; margin: 0; padding: 20px; background-color: #f9f9f9; }
+    p { line-height: 1.6; font-size: 14px; }
+    table { border-collapse: collapse; width: 100%; margin: 20px 0; background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    table, td { border: 1px solid #0099CC; }
+    td { padding: 12px; font-size: 14px; }
+    tr:first-child td { background-color: #0099CC; color: white; font-weight: bold; }
+    tr:nth-child(even) { background-color: #E8F4F8; }
+    tr:nth-child(odd) { background-color: #F5FAFC; }
+  </style>
+</head>
+<body>
 <p>Estimado compañero(s),</p>
 <p>Mediante el presente correo, quiero informarte que se está programando una auditoria según el siguiente cuadro:</p>
-<table border="1" cellpadding="10" cellspacing="0" style="border-collapse: collapse; width: 100%; margin: 20px 0;">
-  <tr style="background-color: #003366; color: white;">
+<table>
+  <tr>
     <td style="font-weight: bold; width: 40%;">OPERADOR</td>
     <td>${data.operador}</td>
   </tr>
@@ -285,7 +301,7 @@ PERSONA DE CONTACTO: ${data.persona_contacto}
     <td style="font-weight: bold;">NÚMERO DE OPERADOR</td>
     <td>${data.numero_operador}</td>
   </tr>
-  <tr style="background-color: #f0f0f0;">
+  <tr>
     <td style="font-weight: bold;">FECHA DE AUDITORÍA (INICIO)</td>
     <td>${data.fecha_inicio}</td>
   </tr>
@@ -293,7 +309,7 @@ PERSONA DE CONTACTO: ${data.persona_contacto}
     <td style="font-weight: bold;">FECHA DE AUDITORÍA (FIN)</td>
     <td>${calcularFechaFin(data.fecha_inicio, data.dias_inspeccion)}</td>
   </tr>
-  <tr style="background-color: #f0f0f0;">
+  <tr>
     <td style="font-weight: bold;">NÚMERO DE DÍAS DE INSPECCIÓN</td>
     <td>${data.dias_inspeccion}</td>
   </tr>
@@ -301,7 +317,7 @@ PERSONA DE CONTACTO: ${data.persona_contacto}
     <td style="font-weight: bold;">AUDITOR</td>
     <td>${data.auditor}</td>
   </tr>
-  <tr style="background-color: #f0f0f0;">
+  <tr>
     <td style="font-weight: bold;">NORMA</td>
     <td>${data.norma}</td>
   </tr>
@@ -309,7 +325,7 @@ PERSONA DE CONTACTO: ${data.persona_contacto}
     <td style="font-weight: bold;">ALCANCE</td>
     <td>${data.alcance}</td>
   </tr>
-  <tr style="background-color: #f0f0f0;">
+  <tr>
     <td style="font-weight: bold;">TIPO</td>
     <td>${data.tipo}</td>
   </tr>
@@ -317,7 +333,7 @@ PERSONA DE CONTACTO: ${data.persona_contacto}
     <td style="font-weight: bold;">MODALIDAD</td>
     <td>${data.modalidad}</td>
   </tr>
-  <tr style="background-color: #f0f0f0;">
+  <tr>
     <td style="font-weight: bold;">CULTIVO/PRODUCTO</td>
     <td>${data.cultivo_producto}</td>
   </tr>
@@ -325,7 +341,7 @@ PERSONA DE CONTACTO: ${data.persona_contacto}
     <td style="font-weight: bold;">LUGAR</td>
     <td>${data.lugar}</td>
   </tr>
-  <tr style="background-color: #f0f0f0;">
+  <tr>
     <td style="font-weight: bold;">ANÁLISIS</td>
     <td>${data.analisis}</td>
   </tr>
@@ -333,13 +349,14 @@ PERSONA DE CONTACTO: ${data.persona_contacto}
     <td style="font-weight: bold;">VIÁTICOS</td>
     <td>${data.viaticos}</td>
   </tr>
-  <tr style="background-color: #f0f0f0;">
+  <tr>
     <td style="font-weight: bold;">PERSONA DE CONTACTO</td>
     <td>${data.persona_contacto}</td>
   </tr>
 </table>
 <p>@ Administración CAAE Perú; favor de coordinar logística para la auditoria.</p>
-</body></html>`;
+</body>
+</html>`;
   };
 
   const generarContenidoExterna = (data) => {
@@ -365,11 +382,26 @@ VIÁTICOS: ${data.viaticos}`;
   };
 
   const generarHTMLExterna = (data) => {
-    return `<html><body style="font-family: Arial, sans-serif;">
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; color: #333; margin: 0; padding: 20px; background-color: #f9f9f9; }
+    p { line-height: 1.6; font-size: 14px; }
+    table { border-collapse: collapse; width: 100%; margin: 20px 0; background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    table, td { border: 1px solid #0099CC; }
+    td { padding: 12px; font-size: 14px; }
+    tr:first-child td { background-color: #0099CC; color: white; font-weight: bold; }
+    tr:nth-child(even) { background-color: #E8F4F8; }
+    tr:nth-child(odd) { background-color: #F5FAFC; }
+  </style>
+</head>
+<body>
 <p>Estimados, reciban un cordial saludo.</p>
 <p>Mediante el presente correo, quiero informarles que se está programando una auditoria para su representada según se detalla en el siguiente cuadro:</p>
-<table border="1" cellpadding="10" cellspacing="0" style="border-collapse: collapse; width: 100%; margin: 20px 0;">
-  <tr style="background-color: #003366; color: white;">
+<table>
+  <tr>
     <td style="font-weight: bold; width: 40%;">OPERADOR</td>
     <td>${data.operador}</td>
   </tr>
@@ -377,7 +409,7 @@ VIÁTICOS: ${data.viaticos}`;
     <td style="font-weight: bold;">NÚMERO DE OPERADOR</td>
     <td>${data.numero_operador}</td>
   </tr>
-  <tr style="background-color: #f0f0f0;">
+  <tr>
     <td style="font-weight: bold;">FECHA DE AUDITORÍA (INICIO)</td>
     <td>${data.fecha_inicio}</td>
   </tr>
@@ -385,7 +417,7 @@ VIÁTICOS: ${data.viaticos}`;
     <td style="font-weight: bold;">FECHA DE AUDITORÍA (FIN)</td>
     <td>${calcularFechaFin(data.fecha_inicio, data.dias_inspeccion)}</td>
   </tr>
-  <tr style="background-color: #f0f0f0;">
+  <tr>
     <td style="font-weight: bold;">NÚMERO DE DÍAS DE INSPECCIÓN</td>
     <td>${data.dias_inspeccion}</td>
   </tr>
@@ -393,7 +425,7 @@ VIÁTICOS: ${data.viaticos}`;
     <td style="font-weight: bold;">AUDITOR</td>
     <td>${data.auditor}</td>
   </tr>
-  <tr style="background-color: #f0f0f0;">
+  <tr>
     <td style="font-weight: bold;">NORMA</td>
     <td>${data.norma}</td>
   </tr>
@@ -401,7 +433,7 @@ VIÁTICOS: ${data.viaticos}`;
     <td style="font-weight: bold;">ALCANCE</td>
     <td>${data.alcance}</td>
   </tr>
-  <tr style="background-color: #f0f0f0;">
+  <tr>
     <td style="font-weight: bold;">TIPO</td>
     <td>${data.tipo}</td>
   </tr>
@@ -409,7 +441,7 @@ VIÁTICOS: ${data.viaticos}`;
     <td style="font-weight: bold;">MODALIDAD</td>
     <td>${data.modalidad}</td>
   </tr>
-  <tr style="background-color: #f0f0f0;">
+  <tr>
     <td style="font-weight: bold;">CULTIVO/PRODUCTO</td>
     <td>${data.cultivo_producto}</td>
   </tr>
@@ -417,12 +449,13 @@ VIÁTICOS: ${data.viaticos}`;
     <td style="font-weight: bold;">LUGAR</td>
     <td>${data.lugar}</td>
   </tr>
-  <tr style="background-color: #f0f0f0;">
+  <tr>
     <td style="font-weight: bold;">VIÁTICOS</td>
     <td>${data.viaticos}</td>
   </tr>
 </table>
-</body></html>`;
+</body>
+</html>`;
   };
 
   const generarContenidoOrdenTrabajo = (data) => {
@@ -450,11 +483,26 @@ RESPONSABLE DE FORMACIÓN: ${data.responsable_formacion}
   };
 
   const generarHTMLOrdenTrabajo = (data) => {
-    return `<html><body style="font-family: Arial, sans-serif;">
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; color: #333; margin: 0; padding: 20px; background-color: #f9f9f9; }
+    p { line-height: 1.6; font-size: 14px; }
+    table { border-collapse: collapse; width: 100%; margin: 20px 0; background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    table, td { border: 1px solid #0099CC; }
+    td { padding: 12px; font-size: 14px; }
+    tr:first-child td { background-color: #0099CC; color: white; font-weight: bold; }
+    tr:nth-child(even) { background-color: #E8F4F8; }
+    tr:nth-child(odd) { background-color: #F5FAFC; }
+  </style>
+</head>
+<body>
 <p>Estimados,</p>
 <p>Asignar la OT (ORDEN DE TRABAJO) según el cuadro siguiente:</p>
-<table border="1" cellpadding="10" cellspacing="0" style="border-collapse: collapse; width: 100%; margin: 20px 0;">
-  <tr style="background-color: #003366; color: white;">
+<table>
+  <tr>
     <td style="font-weight: bold; width: 40%;">OPERADOR</td>
     <td>${data.operador}</td>
   </tr>
@@ -462,7 +510,7 @@ RESPONSABLE DE FORMACIÓN: ${data.responsable_formacion}
     <td style="font-weight: bold;">NÚMERO DE OPERADOR</td>
     <td>${data.numero_operador}</td>
   </tr>
-  <tr style="background-color: #f0f0f0;">
+  <tr>
     <td style="font-weight: bold;">FECHA (INICIO)</td>
     <td>${data.fecha_inicio}</td>
   </tr>
@@ -470,7 +518,7 @@ RESPONSABLE DE FORMACIÓN: ${data.responsable_formacion}
     <td style="font-weight: bold;">FECHA (FIN)</td>
     <td>${calcularFechaFin(data.fecha_inicio, data.dias_inspeccion)}</td>
   </tr>
-  <tr style="background-color: #f0f0f0;">
+  <tr>
     <td style="font-weight: bold;">NÚMERO DE DÍAS DE INSPECCIÓN</td>
     <td>${data.dias_inspeccion}</td>
   </tr>
@@ -478,7 +526,7 @@ RESPONSABLE DE FORMACIÓN: ${data.responsable_formacion}
     <td style="font-weight: bold;">AUDITOR</td>
     <td>${data.auditor}</td>
   </tr>
-  <tr style="background-color: #f0f0f0;">
+  <tr>
     <td style="font-weight: bold;">NORMA</td>
     <td>${data.norma}</td>
   </tr>
@@ -486,7 +534,7 @@ RESPONSABLE DE FORMACIÓN: ${data.responsable_formacion}
     <td style="font-weight: bold;">ALCANCE</td>
     <td>${data.alcance}</td>
   </tr>
-  <tr style="background-color: #f0f0f0;">
+  <tr>
     <td style="font-weight: bold;">TIPO</td>
     <td>${data.tipo}</td>
   </tr>
@@ -494,7 +542,7 @@ RESPONSABLE DE FORMACIÓN: ${data.responsable_formacion}
     <td style="font-weight: bold;">TEMA DE FORMACIÓN</td>
     <td>${data.tema_formacion}</td>
   </tr>
-  <tr style="background-color: #f0f0f0;">
+  <tr>
     <td style="font-weight: bold;">FECHA DE FORMACIÓN</td>
     <td>${data.fecha_formacion}</td>
   </tr>
@@ -502,13 +550,14 @@ RESPONSABLE DE FORMACIÓN: ${data.responsable_formacion}
     <td style="font-weight: bold;">HORARIO DE FORMACIÓN</td>
     <td>${data.horario_formacion}</td>
   </tr>
-  <tr style="background-color: #f0f0f0;">
+  <tr>
     <td style="font-weight: bold;">RESPONSABLE DE FORMACIÓN</td>
     <td>${data.responsable_formacion}</td>
   </tr>
 </table>
 <p>@ enviar tu descarte de conflicto de interés.</p>
-</body></html>`;
+</body>
+</html>`;
   };
 
   const calcularFechaFin = (fechaInicio, dias) => {
