@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   TextField,
   Button,
@@ -16,8 +16,17 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Switch,
+  FormControlLabel,
+  Tooltip,
+  Chip,
+  Divider,
+  Typography,
 } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import ImageIcon from '@mui/icons-material/Image';
+import CodeIcon from '@mui/icons-material/Code';
+import html2canvas from 'html2canvas';
 import { apiService } from '../utils/apiService';
 
 const EmailForm = () => {
@@ -53,10 +62,8 @@ const EmailForm = () => {
   const [messageType, setMessageType] = useState('success');
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
   const [datosParaConfirmar, setDatosParaConfirmar] = useState(null);
-  
-  // Estado para diálogo de confirmación
-  const [openConfirm, setOpenConfirm] = useState(false);
-  const [datosAGuardar, setDatosAGuardar] = useState(null);
+  const [enviarComoImagen, setEnviarComoImagen] = useState(true);
+  const previewRef = useRef(null);
 
   // Cargar plantillas y opciones al montar
   useEffect(() => {
@@ -180,22 +187,33 @@ const EmailForm = () => {
   const handleConfirmarEnvio = async () => {
     setLoading(true);
     try {
-      // Guardar en base de datos con TEXTO PLANO y HTML
+      // Capturar imagen si el toggle está activado
+      let imagenBase64 = null;
+      if (enviarComoImagen && previewRef.current) {
+        const canvas = await html2canvas(previewRef.current, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+        });
+        imagenBase64 = canvas.toDataURL('image/png');
+      }
+
       const data = await apiService.enviarCorreo({
         destinatario: datosParaConfirmar.destinatario,
         asunto: datosParaConfirmar.asunto,
         contenido: datosParaConfirmar.contenidoTexto,
         productor: datosParaConfirmar.productor,
         contenido_html: datosParaConfirmar.contenidoHTML,
+        imagen_base64: imagenBase64,
+        modo_envio: enviarComoImagen ? 'imagen' : 'html',
       });
 
       setMessageType('success');
-      setMessage(`✅ Correo registrado. ID: ${data.id}. Guardando en calendario...`);
+      setMessage(`✅ Correo registrado (ID: ${data.id}). Guardando en calendario...`);
 
-      // Calcular fecha fin
       const fechaFin = calcularFechaFin(formData.fecha_inicio, formData.dias_inspeccion);
 
-      // Guardar evento en calendario
       await apiService.crearEvento({
         operador: formData.operador,
         numero_operador: formData.numero_operador,
@@ -213,31 +231,29 @@ const EmailForm = () => {
       });
 
       setTimeout(() => {
-        // Crear link mailto con HTML para que Outlook lo reciba con tabla bonita
-        const mailtoLink = `mailto:${encodeURIComponent(datosParaConfirmar.destinatario)}?subject=${encodeURIComponent(datosParaConfirmar.asunto)}&body=${encodeURIComponent(datosParaConfirmar.contenidoHTML)}`;
-        
-        // Abrir en nueva pestaña/ventana
-        window.open(mailtoLink, '_blank');
-
-        setTimeout(() => {
-          setFormData({
-            destinatario: '',
-            operador: '',
-            numero_operador: '',
-            fecha_inicio: '',
-            dias_inspeccion: 0,
-            auditor: '',
-            norma: '',
-            alcance: '',
-            tipo: '',
-            modalidad: '',
-            cultivo_producto: '',
-            lugar: '',
-            persona_contacto: '',
-          });
-          setSelectedPlantilla('');
-          setOpenConfirmDialog(false);
-        }, 500);
+        setFormData({
+          destinatario: '',
+          operador: '',
+          numero_operador: '',
+          fecha_inicio: '',
+          dias_inspeccion: 0,
+          auditor: '',
+          norma: '',
+          alcance: '',
+          tipo: '',
+          modalidad: '',
+          cultivo_producto: '',
+          lugar: '',
+          persona_contacto: '',
+          analisis: '',
+          viaticos: '',
+          tema_formacion: '',
+          fecha_formacion: '',
+          horario_formacion: '',
+          responsable_formacion: '',
+        });
+        setSelectedPlantilla('');
+        setOpenConfirmDialog(false);
       }, 1500);
     } catch (error) {
       setMessageType('error');
@@ -558,6 +574,15 @@ RESPONSABLE DE FORMACIÓN: ${data.responsable_formacion}
 <p>@ enviar tu descarte de conflicto de interés.</p>
 </body>
 </html>`;
+  };
+
+  // Extrae <style>...</style> + contenido del <body> para el preview en el diálogo
+  const extraerParaPreview = (htmlCompleto) => {
+    const styleMatch = htmlCompleto.match(/<style[^>]*>[\s\S]*?<\/style>/i);
+    const bodyMatch = htmlCompleto.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    const style = styleMatch ? styleMatch[0] : '';
+    const body = bodyMatch ? bodyMatch[1] : htmlCompleto;
+    return style + body;
   };
 
   const calcularFechaFin = (fechaInicio, dias) => {
@@ -999,41 +1024,95 @@ RESPONSABLE DE FORMACIÓN: ${data.responsable_formacion}
         </Box>
 
         <Alert severity="info" sx={{ mt: 3 }}>
-          <strong>ℹ️ Cómo funciona:</strong> Selecciona una plantilla, completa los campos y haz clic en "Abrir en Outlook". 
-          La fecha final se calcula automáticamente basada en los días de inspección.
+          <strong>Cómo funciona:</strong> Selecciona la plantilla, completa los campos y haz clic en "Abrir en Outlook".
+          Antes de confirmar podrás elegir si enviar el correo como <strong>imagen</strong> (recomendado — se ve igual en cualquier cliente)
+          o como <strong>HTML</strong>. La imagen queda guardada en el historial.
         </Alert>
       </CardContent>
 
-      {/* Diálogo de Confirmación */}
-      <Dialog open={openConfirmDialog} onClose={() => setOpenConfirmDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>📧 Confirmar Envío de Correo</DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            ⚠️ Revisa los datos antes de continuar. ¿Deseas guardar y enviar este correo?
-          </Alert>
+      {/* Diálogo de Confirmación con Preview */}
+      <Dialog open={openConfirmDialog} onClose={() => !loading && setOpenConfirmDialog(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Confirmar Envío de Correo</DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          {/* Datos del correo */}
           {datosParaConfirmar && (
-            <Box sx={{ backgroundColor: '#f5f5f5', p: 2, borderRadius: 1, mb: 2 }}>
-              <strong>Destinatario:</strong> {datosParaConfirmar.destinatario}
-              <br />
+            <Box sx={{ backgroundColor: '#f5f5f5', p: 1.5, borderRadius: 1, mb: 2, fontSize: 13 }}>
+              <strong>Para:</strong> {datosParaConfirmar.destinatario} &nbsp;|&nbsp;
               <strong>Asunto:</strong> {datosParaConfirmar.asunto}
-              <br />
-              <strong>Productor:</strong> {datosParaConfirmar.productor}
             </Box>
           )}
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button 
-            onClick={() => setOpenConfirmDialog(false)}
-            variant="outlined"
+
+          {/* Toggle imagen / HTML */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <Tooltip title="Convierte el correo a imagen PNG antes de enviarlo — renderizado idéntico en cualquier cliente de correo">
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={enviarComoImagen}
+                    onChange={(e) => setEnviarComoImagen(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    {enviarComoImagen
+                      ? <><ImageIcon fontSize="small" color="primary" /> <span>Enviar como <strong>imagen</strong></span></>
+                      : <><CodeIcon fontSize="small" /> <span>Enviar como <strong>HTML</strong></span></>
+                    }
+                  </Box>
+                }
+              />
+            </Tooltip>
+            <Chip
+              size="small"
+              label={enviarComoImagen ? 'Recomendado — se ve igual en todos los clientes' : 'Puede variar según el cliente de correo'}
+              color={enviarComoImagen ? 'success' : 'warning'}
+              variant="outlined"
+            />
+          </Box>
+
+          <Divider sx={{ mb: 2 }} />
+
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+            Vista previa del correo {enviarComoImagen ? '(se enviará como imagen de esta vista)' : '(se enviará como HTML)'}
+          </Typography>
+
+          {/* Preview del correo */}
+          <Box
+            sx={{
+              border: '1px solid #ddd',
+              borderRadius: 1,
+              backgroundColor: '#fff',
+              maxHeight: 420,
+              overflow: 'auto',
+            }}
           >
-            ✏️ Corregir
+            <Box
+              ref={previewRef}
+              sx={{ p: 2 }}
+              dangerouslySetInnerHTML={{
+                __html: datosParaConfirmar?.contenidoHTML
+                  ? extraerParaPreview(datosParaConfirmar.contenidoHTML)
+                  : '',
+              }}
+            />
+          </Box>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button onClick={() => setOpenConfirmDialog(false)} variant="outlined" disabled={loading}>
+            Corregir
           </Button>
-          <Button 
+          <Button
             onClick={handleConfirmarEnvio}
             variant="contained"
             disabled={loading}
+            startIcon={loading ? <CircularProgress size={16} /> : (enviarComoImagen ? <ImageIcon /> : <CodeIcon />)}
           >
-            {loading ? '⏳ Guardando...' : '✅ Guardar y Enviar'}
+            {loading
+              ? (enviarComoImagen ? 'Capturando imagen...' : 'Guardando...')
+              : `Guardar y enviar como ${enviarComoImagen ? 'imagen' : 'HTML'}`
+            }
           </Button>
         </DialogActions>
       </Dialog>

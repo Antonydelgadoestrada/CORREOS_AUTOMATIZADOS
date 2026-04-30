@@ -27,9 +27,9 @@ app.use(cors({
   credentials: true
 }));
 
-// Middlewares
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Middlewares — límite 10mb para soportar imágenes base64
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Rutas API (ANTES de archivos estáticos y React)
 app.get('/api/health', (req, res) => {

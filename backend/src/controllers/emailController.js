@@ -2,21 +2,22 @@ const db = require('../config/database');
 const { enviarCorreo } = require('../utils/nodemailer');
 
 const enviarCorreoController = (req, res) => {
-  const { destinatario, asunto, contenido, productor, contenido_html } = req.body;
+  const { destinatario, asunto, contenido, productor, contenido_html, imagen_base64, modo_envio } = req.body;
 
   try {
-    // Validar datos
     if (!destinatario || !asunto || !contenido) {
       return res.status(400).json({ error: 'Falta información requerida' });
     }
 
-    // Guardar en base de datos local SQLite - texto plano + HTML opcional
     const stmt = db.prepare(`
-      INSERT INTO correos_enviados (destinatario, asunto, productor, contenido, contenido_html, fecha_envio)
-      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      INSERT INTO correos_enviados (destinatario, asunto, productor, contenido, contenido_html, imagen_base64, modo_envio, fecha_envio)
+      VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `);
-    
-    const result = stmt.run(destinatario, asunto, productor, contenido, contenido_html || null);
+
+    const result = stmt.run(
+      destinatario, asunto, productor, contenido,
+      contenido_html || null, imagen_base64 || null, modo_envio || 'html'
+    );
 
     res.status(201).json({
       mensaje: 'Correo registrado exitosamente',
@@ -30,37 +31,42 @@ const enviarCorreoController = (req, res) => {
   }
 };
 
-// Nuevo endpoint para enviar automáticamente
 const enviarCorreoAutomaticamente = async (req, res) => {
-  const { destinatario, asunto, contenido, productor, contenido_html } = req.body;
+  const { destinatario, asunto, contenido, productor, contenido_html, imagen_base64, modo_envio } = req.body;
 
   try {
-    // Validar datos
     if (!destinatario || !asunto || !contenido) {
       return res.status(400).json({ error: 'Falta información requerida' });
     }
 
-    // Guardar en base de datos
     const stmt = db.prepare(`
-      INSERT INTO correos_enviados (destinatario, asunto, productor, contenido, contenido_html, fecha_envio)
-      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      INSERT INTO correos_enviados (destinatario, asunto, productor, contenido, contenido_html, imagen_base64, modo_envio, fecha_envio)
+      VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `);
-    
-    const result = stmt.run(destinatario, asunto, productor, contenido, contenido_html || null);
 
-    // Enviar por SendGrid
+    const result = stmt.run(
+      destinatario, asunto, productor, contenido,
+      contenido_html || null, imagen_base64 || null, modo_envio || 'html'
+    );
+
     try {
-      await enviarCorreo(destinatario, asunto, contenido_html || contenido);
-      
+      // Si hay imagen y el modo es 'imagen', enviar la imagen; si no, enviar HTML
+      const usarImagen = modo_envio === 'imagen' && imagen_base64;
+      await enviarCorreo(
+        destinatario, asunto,
+        contenido_html || contenido,
+        usarImagen ? imagen_base64 : null
+      );
+
       res.status(201).json({
         mensaje: '✅ Correo enviado exitosamente',
         id: result.lastInsertRowid,
         destinatario,
         productor,
         enviado: true,
+        modo: modo_envio || 'html',
       });
     } catch (sendError) {
-      // Si falla el envío, pero se guardó en BD, devolver error pero con ID
       console.error('Error enviando con SendGrid:', sendError);
       res.status(207).json({
         mensaje: '⚠️ Correo guardado pero no se pudo enviar por email',

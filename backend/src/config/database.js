@@ -83,6 +83,15 @@ db.exec(`
   );
 `);
 
+// Migrar columnas nuevas en tablas existentes (safe: ignora si ya existen)
+const migrarColumnas = [
+  "ALTER TABLE correos_enviados ADD COLUMN imagen_base64 TEXT",
+  "ALTER TABLE correos_enviados ADD COLUMN modo_envio TEXT DEFAULT 'html'",
+];
+for (const sql of migrarColumnas) {
+  try { db.prepare(sql).run(); } catch (_) { /* columna ya existe */ }
+}
+
 console.log(`✅ Base de datos SQLite portátil: ${dbPath}`);
 
 module.exports = db;
