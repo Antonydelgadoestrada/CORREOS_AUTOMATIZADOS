@@ -210,7 +210,7 @@ const EmailForm = () => {
       });
 
       setMessageType('success');
-      setMessage(`✅ Correo registrado (ID: ${data.id}). Guardando en calendario...`);
+      setMessage(`✅ Correo registrado (ID: ${data.id}). Abriendo borrador en Outlook...`);
 
       const fechaFin = calcularFechaFin(formData.fecha_inicio, formData.dias_inspeccion);
 
@@ -229,6 +229,14 @@ const EmailForm = () => {
         lugar: formData.lugar,
         persona_contacto: formData.persona_contacto,
       });
+
+      // Abrir borrador en Outlook con destinatario, asunto y cuerpo pre-rellenados
+      abrirBorradorOutlook(
+        datosParaConfirmar.destinatario,
+        datosParaConfirmar.asunto,
+        datosParaConfirmar.contenidoHTML,
+        imagenBase64
+      );
 
       setTimeout(() => {
         setFormData({
@@ -574,6 +582,58 @@ RESPONSABLE DE FORMACIÓN: ${data.responsable_formacion}
 <p>@ enviar tu descarte de conflicto de interés.</p>
 </body>
 </html>`;
+  };
+
+  // Genera un archivo .eml y lo abre en Outlook como borrador pre-rellenado
+  const abrirBorradorOutlook = (destinatario, asunto, contenidoHTML, imagenBase64 = null) => {
+    let emlContent;
+
+    if (imagenBase64) {
+      const base64Data = imagenBase64.replace(/^data:image\/[^;]+;base64,/, '');
+      const boundary = `boundary_${Date.now()}`;
+      emlContent = [
+        'MIME-Version: 1.0',
+        `To: ${destinatario}`,
+        `Subject: ${asunto}`,
+        `Content-Type: multipart/related; boundary="${boundary}"`,
+        '',
+        `--${boundary}`,
+        'Content-Type: text/html; charset=UTF-8',
+        '',
+        `<html><body style="margin:0;padding:16px;font-family:Arial,sans-serif;">` +
+          `<img src="cid:correo_img" style="max-width:100%;height:auto;display:block;">` +
+          `</body></html>`,
+        '',
+        `--${boundary}`,
+        'Content-Type: image/png',
+        'Content-Transfer-Encoding: base64',
+        'Content-ID: <correo_img>',
+        'Content-Disposition: inline; filename="correo.png"',
+        '',
+        base64Data,
+        '',
+        `--${boundary}--`,
+      ].join('\r\n');
+    } else {
+      emlContent = [
+        'MIME-Version: 1.0',
+        `To: ${destinatario}`,
+        `Subject: ${asunto}`,
+        'Content-Type: text/html; charset=UTF-8',
+        '',
+        contenidoHTML,
+      ].join('\r\n');
+    }
+
+    const blob = new Blob([emlContent], { type: 'message/rfc822' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `borrador_${Date.now()}.eml`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   // Extrae <style>...</style> + contenido del <body> para el preview en el diálogo
@@ -1019,14 +1079,15 @@ RESPONSABLE DE FORMACIÓN: ${data.responsable_formacion}
             disabled={loading}
             endIcon={loading ? <CircularProgress size={20} /> : <OpenInNewIcon />}
           >
-            {loading ? 'Preparando...' : 'Abrir en Outlook'}
+            {loading ? 'Preparando...' : 'Vista previa y enviar'}
           </Button>
         </Box>
 
         <Alert severity="info" sx={{ mt: 3 }}>
-          <strong>Cómo funciona:</strong> Selecciona la plantilla, completa los campos y haz clic en "Abrir en Outlook".
-          Antes de confirmar podrás elegir si enviar el correo como <strong>imagen</strong> (recomendado — se ve igual en cualquier cliente)
-          o como <strong>HTML</strong>. La imagen queda guardada en el historial.
+          <strong>Cómo funciona:</strong> Completa el formulario y haz clic en "Vista previa y enviar".
+          Se abre un diálogo donde puedes ver exactamente cómo quedará el correo, elegir si enviarlo como
+          <strong> imagen</strong> o <strong>HTML</strong>, y al confirmar se descarga automáticamente un
+          archivo <strong>.eml</strong> que abre Outlook con el destinatario, asunto y cuerpo ya rellenados — solo tienes que darle a Enviar.
         </Alert>
       </CardContent>
 
