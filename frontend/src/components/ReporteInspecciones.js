@@ -97,26 +97,40 @@ const ReporteInspecciones = () => {
     cargarReporte(nuevoAnio, nuevoMes);
   };
 
-  // Función para calcular el estado de la inspección
+  // Parsea strings YYYY-MM-DD en fecha local sin desfases de zona horaria
+  const parsearFechaLocal = (fechaStr) => {
+    if (!fechaStr) return null;
+    const partes = String(fechaStr).split('T')[0].split('-');
+    if (partes.length !== 3) return new Date(fechaStr);
+    return new Date(parseInt(partes[0], 10), parseInt(partes[1], 10) - 1, parseInt(partes[2], 10));
+  };
+
+  // Función para calcular el estado dinámico de la inspección
   const calcularEstado = (inspeccion) => {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
-    const fechaInicio = new Date(inspeccion.fecha_inicio);
-    const fechaFin = new Date(inspeccion.fecha_fin);
+    const fechaInicio = parsearFechaLocal(inspeccion.fecha_inicio);
+    const fechaFin = parsearFechaLocal(inspeccion.fecha_fin);
+    if (!fechaInicio || !fechaFin) {
+      return { estado: 'Programada', color: 'warning', icon: '📋' };
+    }
     fechaInicio.setHours(0, 0, 0, 0);
     fechaFin.setHours(0, 0, 0, 0);
 
-    if (inspeccion.estado === 'reprogramada') {
-      return { estado: 'Reprogramada', color: 'default', icon: '🔄' };
+    // Si ya pasó la fecha fin
+    if (hoy > fechaFin) {
+      return { estado: 'Finalizada', color: 'success', icon: '✅' };
     }
 
+    // Si está dentro del rango de fechas
     if (hoy >= fechaInicio && hoy <= fechaFin) {
       return { estado: 'En proceso', color: 'info', icon: '⏳' };
     }
 
-    if (hoy > fechaFin) {
-      return { estado: 'Finalizada', color: 'success', icon: '✅' };
+    // Si fue reprogramada previamente y es futura
+    if (inspeccion.estado === 'reprogramada') {
+      return { estado: 'Reprogramada', color: 'default', icon: '🔄' };
     }
 
     return { estado: 'Programada', color: 'warning', icon: '📋' };
@@ -148,11 +162,12 @@ const ReporteInspecciones = () => {
   ];
 
   const formatearFecha = (fecha) => {
-    return new Date(fecha).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
+    if (!fecha) return '';
+    const partes = String(fecha).split('T')[0].split('-');
+    if (partes.length === 3) {
+      return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
+    return String(fecha);
   };
 
   // Exportar CSV (abrible en Excel)

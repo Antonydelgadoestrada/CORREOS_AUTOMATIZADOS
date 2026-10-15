@@ -22,29 +22,53 @@ const Calendar = () => {
     cargarEventos();
   }, []);
 
-  // Función para calcular el estado de la inspección
+  // Parsea strings YYYY-MM-DD en fecha local sin desfases de zona horaria
+  const parsearFechaLocal = (fechaStr) => {
+    if (!fechaStr) return null;
+    const partes = String(fechaStr).split('T')[0].split('-');
+    if (partes.length !== 3) return new Date(fechaStr);
+    return new Date(parseInt(partes[0], 10), parseInt(partes[1], 10) - 1, parseInt(partes[2], 10));
+  };
+
+  // Suma 1 día a la fecha fin para que FullCalendar la trate de forma inclusiva en allDay
+  const sumarUnDiaString = (fechaStr) => {
+    if (!fechaStr) return fechaStr;
+    const partes = String(fechaStr).split('T')[0].split('-');
+    if (partes.length !== 3) return fechaStr;
+    const d = new Date(parseInt(partes[0], 10), parseInt(partes[1], 10) - 1, parseInt(partes[2], 10));
+    d.setDate(d.getDate() + 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  // Función para calcular el estado dinámico de la inspección
   const calcularEstado = (evento) => {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
     
-    const fechaInicio = new Date(evento.fecha_inicio);
-    const fechaFin = new Date(evento.fecha_fin);
+    const fechaInicio = parsearFechaLocal(evento.fecha_inicio);
+    const fechaFin = parsearFechaLocal(evento.fecha_fin);
+    if (!fechaInicio || !fechaFin) {
+      return { estado: 'Programada', color: '#ff9800', icon: '📋' };
+    }
     fechaInicio.setHours(0, 0, 0, 0);
     fechaFin.setHours(0, 0, 0, 0);
-
-    // Si fue reprogramada previamente
-    if (evento.estado === 'reprogramada') {
-      return { estado: 'Reprogramada', color: '#9e9e9e', icon: '🔄' };
-    }
-
-    // Si está dentro del rango de fechas (hoy es igual o después al inicio y antes o igual al fin)
-    if (hoy >= fechaInicio && hoy <= fechaFin) {
-      return { estado: 'En proceso', color: '#2196f3', icon: '⏳' };
-    }
 
     // Si ya pasó la fecha fin
     if (hoy > fechaFin) {
       return { estado: 'Finalizada', color: '#4caf50', icon: '✅' };
+    }
+
+    // Si está dentro del rango de fechas
+    if (hoy >= fechaInicio && hoy <= fechaFin) {
+      return { estado: 'En proceso', color: '#2196f3', icon: '⏳' };
+    }
+
+    // Si fue reprogramada previamente y aún es futura
+    if (evento.estado === 'reprogramada') {
+      return { estado: 'Reprogramada', color: '#9e9e9e', icon: '🔄' };
     }
 
     // Si es futura
@@ -56,20 +80,26 @@ const Calendar = () => {
       setLoading(true);
       const data = await apiService.obtenerEventos();
       
-      // Convertir eventos de la BD al formato de FullCalendar
-      const eventosFormateados = data.map(evento => {
+      // Convertir eventos de la BD al formato de FullCalendar con end inclusivo
+      const eventosFormateados = (data || []).map(evento => {
         const estadoInfo = calcularEstado(evento);
+        const fInicio = String(evento.fecha_inicio).split('T')[0];
+        const fFin = String(evento.fecha_fin).split('T')[0];
+
         return {
           id: evento.id.toString(),
           title: `${estadoInfo.icon} ${evento.operador} - ${evento.auditor}`,
-          start: evento.fecha_inicio,
-          end: evento.fecha_fin,
+          start: fInicio,
+          end: sumarUnDiaString(fFin),
+          allDay: true,
           backgroundColor: estadoInfo.color,
           borderColor: estadoInfo.color,
           extendedProps: {
             id: evento.id,
             operador: evento.operador,
             numero_operador: evento.numero_operador,
+            fecha_inicio: fInicio,
+            fecha_fin: fFin,
             dias_inspeccion: evento.dias_inspeccion,
             auditor: evento.auditor,
             norma: evento.norma,
@@ -106,11 +136,9 @@ const Calendar = () => {
 
   const handleOpenReprogramarDialog = () => {
     if (selectedEvent) {
-      const fechaInicio = selectedEvent.start.toISOString().split('T')[0];
-      // Si el evento no tiene end (evento de 1 día), usar la misma fecha de inicio
-      const fechaFin = selectedEvent.end 
-        ? selectedEvent.end.toISOString().split('T')[0]
-        : fechaInicio;
+      const props = selectedEvent.extendedProps;
+      const fechaInicio = props.fecha_inicio || '';
+      const fechaFin = props.fecha_fin || fechaInicio;
       
       setNuevaFechaInicio(fechaInicio);
       setNuevaFechaFin(fechaFin);
@@ -150,11 +178,12 @@ const Calendar = () => {
   };
 
   const formatearFecha = (fecha) => {
-    return new Date(fecha).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
+    if (!fecha) return '';
+    const partes = String(fecha).split('T')[0].split('-');
+    if (partes.length === 3) {
+      return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
+    return String(fecha);
   };
 
   const obtenerColorEstado = (estado) => {
@@ -251,7 +280,7 @@ const Calendar = () => {
                     Fecha Inicio
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {formatearFecha(selectedEvent.start)}
+                    {formatearFecha(selectedEvent.extendedProps.fecha_inicio)}
                   </Typography>
                 </Grid>
 
@@ -260,7 +289,7 @@ const Calendar = () => {
                     Fecha Fin
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {formatearFecha(selectedEvent.end)}
+                    {formatearFecha(selectedEvent.extendedProps.fecha_fin)}
                   </Typography>
                 </Grid>
 

@@ -73,16 +73,27 @@ const HistorialCorreos = () => {
   };
 
   const handleDescargarComoImagen = async () => {
-    if (!selectedCorreo || !selectedCorreo.contenido_html) {
+    if (!selectedCorreo || (!selectedCorreo.imagen_base64 && !selectedCorreo.contenido_html)) {
       setMessageType('warning');
-      setMessage('⚠️ No hay contenido HTML disponible para descargar');
+      setMessage('⚠️ No hay contenido ni imagen disponible para descargar');
       return;
     }
 
     try {
       setDescargando(true);
-      const nombreArchivo = `Plantilla_${selectedCorreo.asunto.replace(/\s+/g, '_')}_${selectedCorreo.id}`;
-      await descargarHTMLComoImagen(selectedCorreo.contenido_html, nombreArchivo);
+      const nombreArchivo = `Afiche_${(selectedCorreo.asunto || 'Correo').replace(/[^a-zA-Z0-9_-]/g, '_')}_${selectedCorreo.id}`;
+      
+      // Si el correo ya tiene su imagen base64 guardada, descargarla directamente
+      if (selectedCorreo.imagen_base64) {
+        const link = document.createElement('a');
+        link.href = selectedCorreo.imagen_base64;
+        link.download = `${nombreArchivo}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        await descargarHTMLComoImagen(selectedCorreo.contenido_html, nombreArchivo);
+      }
       
       setMessageType('success');
       setMessage('✅ Imagen descargada exitosamente');
@@ -100,13 +111,20 @@ const HistorialCorreos = () => {
   };
 
   const formatearFecha = (fecha) => {
-    return new Date(fecha).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    if (!fecha) return '';
+    try {
+      const d = new Date(fecha);
+      if (isNaN(d.getTime())) return String(fecha);
+      return d.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (e) {
+      return String(fecha);
+    }
   };
 
   const filtrarCorreos = () => {
@@ -278,6 +296,7 @@ const HistorialCorreos = () => {
                     <TableCell><strong>Productor</strong></TableCell>
                     <TableCell><strong>Destinatario</strong></TableCell>
                     <TableCell><strong>Asunto</strong></TableCell>
+                    <TableCell><strong>Formato</strong></TableCell>
                     <TableCell><strong>Fecha</strong></TableCell>
                     <TableCell align="center"><strong>Acciones</strong></TableCell>
                   </TableRow>
@@ -289,6 +308,14 @@ const HistorialCorreos = () => {
                       <TableCell>{correo.destinatario}</TableCell>
                       <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {correo.asunto}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={correo.modo_envio === 'imagen' ? 'Afiche PNG' : 'HTML'}
+                          size="small"
+                          color={correo.modo_envio === 'imagen' ? 'primary' : 'default'}
+                          variant="outlined"
+                        />
                       </TableCell>
                       <TableCell>{formatearFecha(correo.fecha_envio || correo.created_at)}</TableCell>
                       <TableCell align="center">
@@ -382,7 +409,25 @@ const HistorialCorreos = () => {
                 <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 1 }}>
                   Contenido del Correo
                 </Typography>
-                {(selectedCorreo.contenido_html || isHTMLString(selectedCorreo.contenido)) ? (
+                {selectedCorreo.imagen_base64 ? (
+                  <Box
+                    sx={{
+                      backgroundColor: '#f9f9f9',
+                      padding: 1.5,
+                      borderRadius: 1,
+                      maxHeight: 380,
+                      overflowY: 'auto',
+                      border: '1px solid #e0e0e0',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <img
+                      src={selectedCorreo.imagen_base64}
+                      alt="Afiche del correo"
+                      style={{ maxWidth: '100%', height: 'auto', display: 'block', margin: '0 auto', borderRadius: 4 }}
+                    />
+                  </Box>
+                ) : (selectedCorreo.contenido_html || isHTMLString(selectedCorreo.contenido)) ? (
                   <Box
                     sx={{
                       backgroundColor: '#f9f9f9',
@@ -427,7 +472,7 @@ const HistorialCorreos = () => {
 
               <Grid item xs={12}>
                 <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 1 }}>
-                  Descargar Plantilla
+                  Descargar Copia
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
                   <Button
@@ -435,10 +480,13 @@ const HistorialCorreos = () => {
                     color="primary"
                     startIcon={<GetAppIcon />}
                     onClick={handleDescargarComoImagen}
-                    disabled={descargando || !selectedCorreo.contenido_html}
+                    disabled={descargando || (!selectedCorreo.imagen_base64 && !selectedCorreo.contenido_html)}
                     fullWidth
                   >
-                    {descargando ? <CircularProgress size="1.5rem" /> : 'Descargar como Imagen'}
+                    {descargando
+                      ? <CircularProgress size="1.5rem" />
+                      : (selectedCorreo.imagen_base64 ? 'Descargar Afiche (PNG)' : 'Descargar como Imagen')
+                    }
                   </Button>
                 </Box>
               </Grid>

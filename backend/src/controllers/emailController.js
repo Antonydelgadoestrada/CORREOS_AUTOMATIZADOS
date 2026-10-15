@@ -87,7 +87,7 @@ const enviarCorreoAutomaticamente = async (req, res) => {
 const obtenerCorreosEnviados = (req, res) => {
   try {
     const stmt = db.prepare(`
-      SELECT id, destinatario, asunto, contenido, contenido_html, productor, fecha_envio
+      SELECT id, destinatario, asunto, contenido, contenido_html, productor, fecha_envio, imagen_base64, modo_envio
       FROM correos_enviados
       ORDER BY fecha_envio DESC
     `);
