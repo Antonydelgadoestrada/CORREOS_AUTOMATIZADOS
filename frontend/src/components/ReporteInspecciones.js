@@ -53,6 +53,7 @@ const ReporteInspecciones = () => {
 
   useEffect(() => {
     cargarReporte();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const cargarReporte = async (anioParam = anio, mesParam = mes) => {

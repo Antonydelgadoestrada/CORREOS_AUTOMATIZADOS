@@ -121,7 +121,7 @@ const ConfigurarFirma = () => {
         return;
       }
 
-      const response = await apiService.actualizarFirma(firma);
+      await apiService.actualizarFirma(firma);
       
       setMessage('Firma guardada exitosamente');
       setMessageType('success');

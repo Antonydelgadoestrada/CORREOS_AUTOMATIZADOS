@@ -20,6 +20,7 @@ const Calendar = () => {
   // Cargar eventos de la BD
   useEffect(() => {
     cargarEventos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Función para calcular el estado de la inspección

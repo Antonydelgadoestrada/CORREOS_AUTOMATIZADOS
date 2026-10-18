@@ -71,11 +71,12 @@ iniciar.bat
 # Ir a la carpeta del proyecto
 cd CORREOS_AUTOMATIZADOS
 
-# Instalar dependencias (solo primera vez)
+# Instalar dependencias del backend (solo primera vez)
 cd backend && npm install
 
-# Compilar frontend (solo primera vez)
-cd ../frontend && npm run build
+# Instalar dependencias y compilar frontend (solo primera vez)
+cd ../frontend && npm install
+npm run build
 
 # Iniciar servidor
 cd ../backend && npm start
