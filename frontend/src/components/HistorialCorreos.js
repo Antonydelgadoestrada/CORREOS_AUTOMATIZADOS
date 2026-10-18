@@ -22,6 +22,12 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+  Divider,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import GetAppIcon from '@mui/icons-material/GetApp';
@@ -29,6 +35,12 @@ import { apiService } from '../utils/apiService';
 import CloseIcon from '@mui/icons-material/Close';
 import ClearIcon from '@mui/icons-material/Clear';
 import { descargarHTMLComoImagen } from '../utils/htmlToImage';
+
+// Detectar si una cadena contiene HTML (por ejemplo una tabla)
+const isHTMLString = (str) => {
+  if (!str || typeof str !== 'string') return false;
+  return /<\s*(table|tr|td|th|tbody|thead|tfoot)[^>]*>/i.test(str);
+};
 
 const HistorialCorreos = () => {
   const [correos, setCorreos] = useState([]);
@@ -179,9 +191,9 @@ const HistorialCorreos = () => {
   const correosFiltrados = filtrarCorreos();
 
   return (
-    <Box sx={{ display: 'flex', gap: 2 }}>
-      {/* Tabla de correos */}
-      <Card sx={{ flex: 1 }}>
+    <Box sx={{ width: '100%' }}>
+      {/* Tabla de correos - ancho completo para máxima legibilidad */}
+      <Card sx={{ width: '100%' }}>
         <CardHeader title="📧 Historial de Correos Enviados" />
         <CardContent>
           {message && <Alert severity={messageType} sx={{ mb: 2 }}>{message}</Alert>}
@@ -319,152 +331,163 @@ const HistorialCorreos = () => {
         </CardContent>
       </Card>
 
-      {/* Panel de detalles */}
-      {selectedCorreo && (
-        <Card sx={{ width: 400, maxHeight: '80vh', overflowY: 'auto', position: 'sticky', top: 20 }}>
-          <CardHeader
-            title="📋 Detalles del Correo"
-            action={
-              <Button
-                size="small"
-                onClick={handleCloseDetalle}
-                startIcon={<CloseIcon />}
+      {/* Modal Dialog de detalles del correo (abierto al hacer clic en Ver) */}
+      <Dialog
+        open={Boolean(selectedCorreo)}
+        onClose={handleCloseDetalle}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 0.5,
+          },
+        }}
+      >
+        {selectedCorreo && (
+          <>
+            <DialogTitle
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                pb: 1.5,
+                borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  📋 Detalles del Correo
+                </Typography>
+                <Chip
+                  label={`#${selectedCorreo.id}`}
+                  size="small"
+                  color="primary"
+                  sx={{ fontWeight: 700 }}
+                />
+                <Chip
+                  label={selectedCorreo.productor}
+                  size="small"
+                  variant="outlined"
+                  sx={{ fontWeight: 600 }}
+                />
+              </Box>
+              <IconButton onClick={handleCloseDetalle} size="small" aria-label="Cerrar">
+                <CloseIcon />
+              </IconButton>
+            </DialogTitle>
+
+            <DialogContent sx={{ pt: 2.5 }}>
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="caption" color="text.secondary">
+                    Destinatario
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 600, wordBreak: 'break-all' }}>
+                    {selectedCorreo.destinatario}
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="caption" color="text.secondary">
+                    Fecha de Envío
+                  </Typography>
+                  <Typography variant="body1">
+                    {formatearFecha(selectedCorreo.fecha_envio || selectedCorreo.created_at)}
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Typography variant="caption" color="text.secondary">
+                    Asunto
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                    {selectedCorreo.asunto}
+                  </Typography>
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ my: 1.5 }} />
+
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+                Contenido del Correo
+              </Typography>
+
+              {/* Contenedor del contenido del correo - estilo hoja con formato original */}
+              <Paper
+                elevation={2}
+                sx={{
+                  p: 2.5,
+                  backgroundColor: '#ffffff',
+                  color: '#1e293b',
+                  borderRadius: 2,
+                  maxHeight: 460,
+                  overflowY: 'auto',
+                  border: '1px solid #e2e8f0',
+                  '& table': {
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                  },
+                  '& td, & th': {
+                    padding: '8px 12px',
+                    border: '1px solid #cbd5e1',
+                    color: '#1e293b',
+                  },
+                  '& tr:nth-child(even)': {
+                    backgroundColor: '#f8fafc',
+                  },
+                }}
               >
-                Cerrar
-              </Button>
-            }
-          />
-          <CardContent>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" color="textSecondary">
-                  ID del Correo
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                  #{selectedCorreo.id}
-                </Typography>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" color="textSecondary">
-                  Productor
-                </Typography>
-                <Chip label={selectedCorreo.productor} color="primary" variant="outlined" />
-              </Grid>
-
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" color="textSecondary">
-                  Email Destinatario
-                </Typography>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    wordBreak: 'break-all',
-                    backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : '#f8fafc',
-                    border: (theme) => `1px solid ${theme.palette.divider}`,
-                    padding: 1,
-                    borderRadius: 1
-                  }}
-                >
-                  {selectedCorreo.destinatario}
-                </Typography>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" color="textSecondary">
-                  Asunto
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {selectedCorreo.asunto}
-                </Typography>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" color="textSecondary">
-                  Fecha de Envío
-                </Typography>
-                <Typography variant="body2">
-                  {formatearFecha(selectedCorreo.fecha_envio || selectedCorreo.created_at)}
-                </Typography>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 1 }}>
-                  Contenido del Correo
-                </Typography>
-                {(selectedCorreo.contenido_html || isHTMLString(selectedCorreo.contenido)) ? (
+                {selectedCorreo.imagen_base64 && selectedCorreo.modo_envio === 'imagen' ? (
+                  <Box sx={{ textAlign: 'center' }}>
+                    <img
+                      src={selectedCorreo.imagen_base64}
+                      alt={selectedCorreo.asunto}
+                      style={{ maxWidth: '100%', height: 'auto', borderRadius: 4 }}
+                    />
+                  </Box>
+                ) : selectedCorreo.contenido_html || isHTMLString(selectedCorreo.contenido) ? (
                   <Box
-                    sx={{
-                      backgroundColor: '#f9f9f9',
-                      padding: 1.5,
-                      borderRadius: 1,
-                      maxHeight: 300,
-                      overflowY: 'auto',
-                      border: '1px solid #e0e0e0',
-                      '& table': {
-                        width: '100%',
-                        borderCollapse: 'collapse',
-                      },
-                      '& td': {
-                        padding: '8px',
-                        border: '1px solid #ddd',
-                      },
-                      '& tr:nth-child(even)': {
-                        backgroundColor: '#f0f0f0',
-                      },
+                    dangerouslySetInnerHTML={{
+                      __html: selectedCorreo.contenido_html || selectedCorreo.contenido,
                     }}
-                    dangerouslySetInnerHTML={{ __html: selectedCorreo.contenido_html || selectedCorreo.contenido }}
                   />
                 ) : (
-                  <Box
+                  <Typography
+                    component="pre"
                     sx={{
-                      backgroundColor: '#f9f9f9',
-                      padding: 1.5,
-                      borderRadius: 1,
-                      maxHeight: 300,
-                      overflowY: 'auto',
-                      fontSize: '0.85rem',
+                      fontFamily: 'monospace',
+                      fontSize: '0.875rem',
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
-                      border: '1px solid #e0e0e0',
-                      fontFamily: 'monospace',
+                      m: 0,
                     }}
                   >
                     {selectedCorreo.contenido}
-                  </Box>
+                  </Typography>
                 )}
-              </Grid>
+              </Paper>
+            </DialogContent>
 
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 1 }}>
-                  Descargar Plantilla
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    startIcon={<GetAppIcon />}
-                    onClick={handleDescargarComoImagen}
-                    disabled={descargando || !selectedCorreo.contenido_html}
-                    fullWidth
-                  >
-                    {descargando ? <CircularProgress size="1.5rem" /> : 'Descargar como Imagen'}
-                  </Button>
-                </Box>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
-      )}
+            <DialogActions sx={{ p: 2, pt: 1, borderTop: (theme) => `1px solid ${theme.palette.divider}`, gap: 1 }}>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<GetAppIcon />}
+                onClick={handleDescargarComoImagen}
+                disabled={descargando || !selectedCorreo.contenido_html}
+              >
+                {descargando ? <CircularProgress size="1.25rem" color="inherit" /> : 'Descargar como Imagen'}
+              </Button>
+              <Button onClick={handleCloseDetalle} variant="outlined" color="inherit">
+                Cerrar
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
     </Box>
   );
 };
-
-  // Detectar si una cadena contiene HTML (por ejemplo una tabla)
-  const isHTMLString = (str) => {
-    if (!str || typeof str !== 'string') return false;
-    // buscar etiquetas comunes de tabla o html
-    return /<\s*(table|tr|td|th|tbody|thead|tfoot)[^>]*>/i.test(str);
-  };
 
 export default HistorialCorreos;
