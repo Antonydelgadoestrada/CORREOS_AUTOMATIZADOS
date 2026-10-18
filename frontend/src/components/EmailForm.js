@@ -1097,7 +1097,17 @@ RESPONSABLE DE FORMACIÓN: ${data.responsable_formacion}
         <DialogContent sx={{ pt: 1 }}>
           {/* Datos del correo */}
           {datosParaConfirmar && (
-            <Box sx={{ backgroundColor: '#f5f5f5', p: 1.5, borderRadius: 1, mb: 2, fontSize: 13 }}>
+            <Box
+              sx={{
+                backgroundColor: (theme) =>
+                  theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#f8fafc',
+                border: (theme) => `1px solid ${theme.palette.divider}`,
+                p: 1.5,
+                borderRadius: 1,
+                mb: 2,
+                fontSize: 13,
+              }}
+            >
               <strong>Para:</strong> {datosParaConfirmar.destinatario} &nbsp;|&nbsp;
               <strong>Asunto:</strong> {datosParaConfirmar.asunto}
             </Box>

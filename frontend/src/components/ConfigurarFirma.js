@@ -273,7 +273,9 @@ const ConfigurarFirma = () => {
                   <Paper
                     sx={{
                       p: 2,
-                      backgroundColor: '#f5f5f5',
+                      backgroundColor: (theme) =>
+                        theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc',
+                      border: (theme) => `1px solid ${theme.palette.divider}`,
                       textAlign: 'center',
                       maxWidth: '300px',
                     }}

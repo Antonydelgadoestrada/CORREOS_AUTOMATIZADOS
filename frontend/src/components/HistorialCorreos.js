@@ -187,7 +187,16 @@ const HistorialCorreos = () => {
           {message && <Alert severity={messageType} sx={{ mb: 2 }}>{message}</Alert>}
 
           {/* Filtros */}
-          <Box sx={{ mb: 3, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+          <Box
+            sx={{
+              mb: 3,
+              p: 2,
+              backgroundColor: (theme) =>
+                theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc',
+              borderRadius: 2,
+              border: (theme) => `1px solid ${theme.palette.divider}`,
+            }}
+          >
             <Typography variant="h6" sx={{ mb: 2 }}>🔍 Filtros</Typography>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6} md={3}>
@@ -274,7 +283,7 @@ const HistorialCorreos = () => {
             <TableContainer component={Paper}>
               <Table>
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                  <TableRow sx={{ backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc' }}>
                     <TableCell><strong>Productor</strong></TableCell>
                     <TableCell><strong>Destinatario</strong></TableCell>
                     <TableCell><strong>Asunto</strong></TableCell>
@@ -351,7 +360,8 @@ const HistorialCorreos = () => {
                   variant="body2" 
                   sx={{ 
                     wordBreak: 'break-all',
-                    backgroundColor: '#f5f5f5',
+                    backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : '#f8fafc',
+                    border: (theme) => `1px solid ${theme.palette.divider}`,
                     padding: 1,
                     borderRadius: 1
                   }}

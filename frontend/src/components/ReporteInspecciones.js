@@ -349,7 +349,16 @@ const ReporteInspecciones = () => {
 
           {/* Resumen */}
           {!loading && inspecciones.length > 0 && (
-            <Box sx={{ mb: 3, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+            <Box
+              sx={{
+                mb: 3,
+                p: 2,
+                backgroundColor: (theme) =>
+                  theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc',
+                borderRadius: 2,
+                border: (theme) => `1px solid ${theme.palette.divider}`,
+              }}
+            >
               <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold' }}>
                 📈 Resumen del mes
               </Typography>
@@ -400,7 +409,7 @@ const ReporteInspecciones = () => {
           ) : (
             <TableContainer component={Paper}>
               <Table>
-                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+                <TableHead sx={{ backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc' }}>
                   <TableRow>
                     <TableCell sx={{ fontWeight: 'bold' }}>Estado</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>Operador</TableCell>

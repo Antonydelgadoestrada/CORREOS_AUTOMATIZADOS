@@ -360,7 +360,16 @@ const Calendar = () => {
             <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 2 }}>
               Datos del Inspector
             </Typography>
-            <Box sx={{ p: 2, backgroundColor: '#f5f5f5', borderRadius: 1, mb: 3 }}>
+            <Box
+              sx={{
+                p: 2,
+                backgroundColor: (theme) =>
+                  theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#f8fafc',
+                border: (theme) => `1px solid ${theme.palette.divider}`,
+                borderRadius: 1,
+                mb: 3,
+              }}
+            >
               <Typography variant="body2"><strong>Operador:</strong> {selectedEvent?.extendedProps.operador}</Typography>
               <Typography variant="body2"><strong>Auditor:</strong> {selectedEvent?.extendedProps.auditor}</Typography>
               <Typography variant="body2"><strong>Norma:</strong> {selectedEvent?.extendedProps.norma}</Typography>
